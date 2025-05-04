@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../pages/course_details_page.dart';
+import 'profile_page.dart';
 
 class HomeApprenant extends StatefulWidget {
   const HomeApprenant({super.key});
@@ -145,6 +146,17 @@ class _HomeApprenantState extends State<HomeApprenant> {
         title: const Text('Espace Apprenant', style: TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: IconThemeData(color: white),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.person_outline, color: lightGray), // Icône en gris
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilePage()), // Page à créer
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
