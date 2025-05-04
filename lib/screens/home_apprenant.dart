@@ -12,12 +12,12 @@ class HomeApprenant extends StatefulWidget {
 }
 
 class _HomeApprenantState extends State<HomeApprenant> {
-  // Palette de couleurs (identique à HomeFormateur)
-  final Color primaryColor = const Color(0xFF30B0C7); // Bleu principal
-  final Color accentYellow = const Color(0xFFFFD700); // Jaune pour les accents
-  final Color importantRed = const Color(0xFFE53935); // Rouge pour les éléments importants
-  final Color lightGray = const Color(0xFFEEEEEE); // Gris clair pour les fonds
-  final Color darkGray = const Color(0xFF757575); // Gris foncé pour le texte secondaire
+  // Palette de couleurs
+  final Color primaryColor = const Color(0xFF30B0C7);
+  final Color accentYellow = const Color(0xFFFFD700);
+  final Color importantRed = const Color(0xFFE53935);
+  final Color lightGray = const Color(0xFFEEEEEE);
+  final Color darkGray = const Color(0xFF757575);
   final Color white = Colors.white;
 
   String searchQuery = '';
@@ -57,7 +57,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Ferme le dialog avant enregistrement
               await _updateRating(courseId, tempRating);
             },
             style: ElevatedButton.styleFrom(
@@ -83,6 +83,27 @@ class _HomeApprenantState extends State<HomeApprenant> {
           .doc(userId);
 
       await ratingRef.set({'rating': rating});
+
+      // Mise à jour de la note moyenne dans le document du cours
+      final ratingsSnapshot = await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .collection('ratings')
+          .get();
+
+      double total = 0;
+      for (var doc in ratingsSnapshot.docs) {
+        total += (doc.data()['rating'] ?? 0).toDouble();
+      }
+      double newAverage = total / ratingsSnapshot.docs.length;
+
+      await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .update({
+        'averageRating': newAverage,
+        'ratingCount': ratingsSnapshot.docs.length,
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

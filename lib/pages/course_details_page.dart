@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'YoutubeThumbnailPlayer.dart';
 
 class CourseDetailsPage extends StatefulWidget {
@@ -13,6 +12,14 @@ class CourseDetailsPage extends StatefulWidget {
 }
 
 class _CourseDetailsPageState extends State<CourseDetailsPage> {
+  // Palette de couleurs (identique aux autres pages)
+  final Color primaryColor = const Color(0xFF30B0C7); // Bleu principal
+  final Color accentYellow = const Color(0xFFFFD700); // Jaune pour les accents
+  final Color importantRed = const Color(0xFFE53935); // Rouge pour les éléments importants
+  final Color lightGray = const Color(0xFFEEEEEE); // Gris clair pour les fonds
+  final Color darkGray = const Color(0xFF757575); // Gris foncé pour le texte secondaire
+  final Color white = Colors.white;
+
   int selectedChapterIndex = 0;
   List<DocumentSnapshot> chapters = [];
 
@@ -42,15 +49,17 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Course Details'),
-        leading: BackButton(),
+        title: const Text('Détails du Cours', style: TextStyle(color: Colors.white)),
+        backgroundColor: primaryColor,
+        iconTheme: IconThemeData(color: white),
+        leading: BackButton(color: white),
       ),
       body: Row(
         children: [
           // Sidebar
           Container(
             width: 100,
-            color: const Color(0xFFF2E8FF),
+            color: lightGray,
             child: ListView.builder(
               itemCount: chapters.length,
               itemBuilder: (context, index) {
@@ -66,12 +75,18 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                     child: Column(
                       children: [
                         CircleAvatar(
-                          backgroundColor:
-                          isSelected ? Colors.purple[300] : Colors.purple[100],
+                          backgroundColor: isSelected ? primaryColor : white,
+                          foregroundColor: isSelected ? white : primaryColor,
                           child: Text('${index + 1}'),
                         ),
                         const SizedBox(height: 4),
-                        Text('Chap ${index + 1}'),
+                        Text(
+                          'Chap ${index + 1}',
+                          style: TextStyle(
+                            color: isSelected ? primaryColor : darkGray,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -83,22 +98,26 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
           // Content
           Expanded(
             child: Container(
-              color: const Color(0xFFF7EBFF),
+              color: white,
               padding: const EdgeInsets.all(20),
               child: data == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: primaryColor))
                   : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       data['title'] ?? '',
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       data['summary'] ?? '',
-                      style: const TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16, color: darkGray),
                     ),
                     const SizedBox(height: 20),
                     YoutubeThumbnailPlayer(youtubeUrl: data['videoUrl'] ?? ''),
