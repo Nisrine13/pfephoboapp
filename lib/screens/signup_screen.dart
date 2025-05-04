@@ -57,7 +57,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (_) => selectedRole == 'Formateur'
-                  ? const HomeFormateur()
+                  ? HomeFormateur()
                   : const HomeApprenant(),
             ),
                 (route) => false,

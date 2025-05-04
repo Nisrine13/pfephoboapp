@@ -43,19 +43,26 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result['role'] == 'Formateur') {
+        // Rediriger vers la page "HomeFormateur"
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeFormateur()),
         );
-      } else {
+      } else if (result['role'] == 'Apprenant') {
+        // Rediriger vers la page "HomeApprenant"
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeApprenant()),
         );
+      } else {
+        // Afficher un message d'erreur si le rôle n'est pas reconnu
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rôle non reconnu.')),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text('Erreur : ${e.toString()}')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -85,10 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       decoration: buildInputDecoration(hint: 'Email', icon: Icons.email),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (value) =>
-                      !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value ?? '')
-                          ? 'Email invalide'
-                          : null,
+                      validator: (value) => !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value ?? '') ? 'Email invalide' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

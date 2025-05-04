@@ -12,6 +12,14 @@ class HomeApprenant extends StatefulWidget {
 }
 
 class _HomeApprenantState extends State<HomeApprenant> {
+  // Palette de couleurs (identique à HomeFormateur)
+  final Color primaryColor = const Color(0xFF30B0C7); // Bleu principal
+  final Color accentYellow = const Color(0xFFFFD700); // Jaune pour les accents
+  final Color importantRed = const Color(0xFFE53935); // Rouge pour les éléments importants
+  final Color lightGray = const Color(0xFFEEEEEE); // Gris clair pour les fonds
+  final Color darkGray = const Color(0xFF757575); // Gris foncé pour le texte secondaire
+  final Color white = Colors.white;
+
   String searchQuery = '';
   double selectedRating = 0;
 
@@ -21,11 +29,12 @@ class _HomeApprenantState extends State<HomeApprenant> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Évaluer ce cours'),
+        backgroundColor: white,
+        title: Text('Évaluer ce cours', style: TextStyle(color: primaryColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Choisissez une note :'),
+            Text('Choisissez une note :', style: TextStyle(color: darkGray)),
             const SizedBox(height: 10),
             RatingBar.builder(
               initialRating: 0,
@@ -33,7 +42,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
               direction: Axis.horizontal,
               allowHalfRating: false,
               itemCount: 5,
-              itemBuilder: (context, _) => const Icon(Icons.star, color: Colors.amber),
+              itemBuilder: (context, _) => Icon(Icons.star, color: accentYellow),
               onRatingUpdate: (rating) {
                 tempRating = rating;
               },
@@ -42,17 +51,18 @@ class _HomeApprenantState extends State<HomeApprenant> {
         ),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: importantRed),
             child: const Text('Annuler'),
             onPressed: () => Navigator.pop(context),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Ferme le dialog avant enregistrement
+              Navigator.pop(context);
               await _updateRating(courseId, tempRating);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade400,
-              foregroundColor: Colors.white,
+              backgroundColor: primaryColor,
+              foregroundColor: white,
             ),
             child: const Text('Valider'),
           ),
@@ -75,11 +85,17 @@ class _HomeApprenantState extends State<HomeApprenant> {
       await ratingRef.set({'rating': rating});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Note enregistrée avec succès.")),
+        SnackBar(
+          content: const Text("Note enregistrée avec succès."),
+          backgroundColor: primaryColor,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors de la notation: $e")),
+        SnackBar(
+          content: Text("Erreur lors de la notation: $e"),
+          backgroundColor: importantRed,
+        ),
       );
     }
   }
@@ -103,84 +119,101 @@ class _HomeApprenantState extends State<HomeApprenant> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: lightGray,
       appBar: AppBar(
-        title: const Text('Espace Apprenant'),
+        title: const Text('Espace Apprenant', style: TextStyle(color: Colors.white)),
+        backgroundColor: primaryColor,
+        iconTheme: IconThemeData(color: white),
       ),
-      body: Container(
-        color: const Color(0xFFF4EFFF),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: TextField(
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value.toLowerCase();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un cours...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide.none,
-                  ),
+      body: Column(
+        children: [
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Rechercher un cours...',
+                hintStyle: TextStyle(color: darkGray),
+                prefixIcon: Icon(Icons.search, color: primaryColor),
+                filled: true,
+                fillColor: white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('courses').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return const Center(child: Text("Erreur lors du chargement des cours"));
-                  }
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('courses').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "Erreur lors du chargement des cours",
+                      style: TextStyle(color: importantRed),
+                    ),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(color: primaryColor),
+                  );
+                }
 
-                  final filteredCourses = snapshot.data!.docs.where((doc) {
-                    final title = (doc['title'] as String).toLowerCase();
-                    final description = (doc['description'] as String).toLowerCase();
-                    final author = (doc['author'] as String?)?.toLowerCase() ?? '';
-                    final category = (doc['category'] as String?)?.toLowerCase() ?? '';
+                final filteredCourses = snapshot.data!.docs.where((doc) {
+                  final title = (doc['title'] as String).toLowerCase();
+                  final description = (doc['description'] as String).toLowerCase();
+                  final author = (doc['author'] as String?)?.toLowerCase() ?? '';
+                  final category = (doc['category'] as String?)?.toLowerCase() ?? '';
 
-                    return title.contains(searchQuery) ||
-                        description.contains(searchQuery) ||
-                        author.contains(searchQuery) ||
-                        category.contains(searchQuery);
-                  }).toList();
+                  return title.contains(searchQuery) ||
+                      description.contains(searchQuery) ||
+                      author.contains(searchQuery) ||
+                      category.contains(searchQuery);
+                }).toList();
 
-                  return ListView.builder(
-                    itemCount: filteredCourses.length,
-                    itemBuilder: (context, index) {
-                      final course = filteredCourses[index];
-                      final courseId = course.id;
+                return ListView.builder(
+                  itemCount: filteredCourses.length,
+                  itemBuilder: (context, index) {
+                    final course = filteredCourses[index];
+                    final courseId = course.id;
 
-                      return FutureBuilder<double>(
-                        future: _calculateAverageRating(courseId),
-                        builder: (context, snapshot) {
-                          final averageRating = snapshot.data?.toStringAsFixed(1) ?? '0.0';
+                    return FutureBuilder<double>(
+                      future: _calculateAverageRating(courseId),
+                      builder: (context, snapshot) {
+                        final averageRating = snapshot.data?.toStringAsFixed(1) ?? '0.0';
 
-                          return Card(
-                            margin: const EdgeInsets.all(10),
-                            elevation: 8,
-                            shape: RoundedRectangleBorder(
+                        return Card(
+                          margin: const EdgeInsets.all(10),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: white,
                               borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF1E9FF),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.all(15),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                            padding: const EdgeInsets.all(15),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (course['imageUrl'] != null && course['imageUrl'].toString().isNotEmpty)
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(15),
                                     child: Image.network(
@@ -188,66 +221,91 @@ class _HomeApprenantState extends State<HomeApprenant> {
                                       height: 150,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Container(
+                                            height: 150,
+                                            color: lightGray,
+                                            child: Icon(Icons.image, color: darkGray),
+                                          ),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                const SizedBox(height: 10),
+                                Text(
+                                  course['title'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  course['description'],
+                                  style: TextStyle(fontSize: 14, color: darkGray),
+                                ),
+                                const SizedBox(height: 5),
+                                if (course['author'] != null)
                                   Text(
-                                    course['title'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                    "Auteur : ${course['author']}",
+                                    style: TextStyle(color: darkGray),
+                                  ),
+                                if (course['category'] != null)
+                                  Text(
+                                    "Catégorie : ${course['category']}",
+                                    style: TextStyle(color: darkGray),
+                                  ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => CourseDetailsPage(courseId: courseId),
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryColor,
+                                        foregroundColor: white,
+                                      ),
+                                      child: const Text('Voir le cours'),
                                     ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    course['description'],
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  if (course['author'] != null)
-                                    Text("Auteur : ${course['author']}"),
-                                  if (course['category'] != null)
-                                    Text("Catégorie : ${course['category']}"),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => CourseDetailsPage(courseId: courseId),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text('See cours'),
+                                    ElevatedButton(
+                                      onPressed: () => _showRatingDialog(courseId),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: accentYellow,
+                                        foregroundColor: darkGray,
                                       ),
-                                      ElevatedButton(
-                                        onPressed: () => _showRatingDialog(courseId),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.amber.shade400,
-                                          foregroundColor: Colors.white,
-                                        ),
-                                        child: const Text('Évaluer'),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text('Note moyenne : $averageRating / 5'),
-                                ],
-                              ),
+                                      child: const Text('Évaluer'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    Icon(Icons.star, color: accentYellow, size: 20),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Note moyenne : $averageRating / 5',
+                                      style: TextStyle(color: darkGray),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

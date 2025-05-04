@@ -6,10 +6,13 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.7.2 <4.0.0'
 
+# file_picker déclenche des avertissements sur desktop
+# mais fonctionne sans problème sur Android/iOS
 dependencies:
   flutter:
     sdk: flutter
   flutter_rating_bar: ^4.0.1
+  intl: ^0.18.1
 
   # UI
   cupertino_icons: ^1.0.8
@@ -18,13 +21,19 @@ dependencies:
   firebase_core: ^3.13.0
   firebase_auth: ^5.5.3
   cloud_firestore: ^5.6.7
-  firebase_dynamic_links: 6.1.5
+  firebase_dynamic_links: 6.1.5 # (discontinued)
   shared_preferences: ^2.2.2
+  firebase_storage: ^12.4.5
+  image_picker: ^1.0.4
+  file_picker: ^10.1.2 # version compatible et stable
+  path: ^1.9.0
+  path_provider: ^2.0.8
 
   # Autres plugins utiles
   google_sign_in: ^6.2.1
   video_player: ^2.8.6
   youtube_player_flutter: ^9.1.1  # Version stable sans conflit
+  permission_handler: ^11.0.0
 
 
 dev_dependencies:
