@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "767227048847",
+    "project_id": "pfeprojetphobo",
+    "storage_bucket": "pfeprojetphobo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:767227048847:android:ce4b052403f4a1042591fa",
+        "android_client_info": {
+          "package_name": "com.nisrine.monapp.pfephoboapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxIA_vqXdRbYHloFIq9h_QLdj7Uz159WY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
