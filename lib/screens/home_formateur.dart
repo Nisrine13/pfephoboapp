@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/supabase_service.dart'; // adapte le chemin si besoin
-
+import '../pages/qcm_form_page.dart';
 
 class HomeFormateur extends StatefulWidget {
   const HomeFormateur({Key? key}) : super(key: key);
@@ -215,7 +215,9 @@ class _HomeFormateurState extends State<HomeFormateur> {
                           ),
                         ),
                       ),
-                      ElevatedButton.icon(
+                      const SizedBox(height: 8),
+                      Center(
+                      child: ElevatedButton.icon(
                         onPressed: () async {
                           final result = await FilePicker.platform.pickFiles(
                             type: FileType.custom,
@@ -252,6 +254,7 @@ class _HomeFormateurState extends State<HomeFormateur> {
                         icon: Icon(Icons.video_library, color: Colors.white),
                         label: Text("Choisir une vidéo", style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                      ),
                       ),
                       // ✅ Afficher l'URL de la vidéo si présente
                       if (chapterVideos[i].text.isNotEmpty)
@@ -461,25 +464,123 @@ class _HomeFormateurState extends State<HomeFormateur> {
                       final chapter = chapters[index];
                       return Card(
                         margin: EdgeInsets.symmetric(vertical: 6),
-                        child: ListTile(
+                        child: ExpansionTile(
                           leading: chapter['videoUrl'] != null
                               ? Icon(Icons.play_circle_filled, color: primaryColor)
                               : Icon(Icons.videocam_off, color: darkGray),
                           title: Text(chapter['title'], style: TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(chapter['summary']),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.edit, color: primaryColor),
-                                onPressed: () => _editChapter(course.id, chapter),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete, color: importantRed),
-                                onPressed: () => _deleteChapter(course.id, chapter.id),
-                              ),
-                            ],
-                          ),
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit, color: primaryColor),
+                                  tooltip: "Modifier le chapitre",
+                                  onPressed: () => _editChapter(course.id, chapter),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: importantRed),
+                                  tooltip: "Supprimer le chapitre",
+                                  onPressed: () => _deleteChapter(course.id, chapter.id),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.quiz, color: Colors.green),
+                                  tooltip: "Ajouter QCM",
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => QcmFormPage(
+                                          courseId: course.id,
+                                          chapterId: chapter.id,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: _firestore
+                                  .collection('courses')
+                                  .doc(course.id)
+                                  .collection('chapters')
+                                  .doc(chapter.id)
+                                  .collection('questions')
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+
+                                final questions = snapshot.data!.docs;
+                                if (questions.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Aucun QCM disponible."),
+                                  );
+                                }
+
+                                return Column(
+                                  children: questions.map((q) {
+                                    final data = q.data() as Map<String, dynamic>;
+                                    return ListTile(
+                                      title: Text(data['questionText']),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: List.generate(data['options'].length, (i) {
+                                          final isCorrect = i == data['correctIndex'];
+                                          return Text(
+                                            "${String.fromCharCode(65 + i)}. ${data['options'][i]}",
+                                            style: TextStyle(
+                                              fontWeight: isCorrect ? FontWeight.bold : FontWeight.normal,
+                                              color: isCorrect ? Colors.green : darkGray,
+                                            ),
+                                          );
+                                        }),
+                                      ),
+                                      trailing: IconButton(
+                                        icon: Icon(Icons.delete, color: importantRed),
+                                        onPressed: () async {
+                                          await _firestore
+                                              .collection('courses')
+                                              .doc(course.id)
+                                              .collection('chapters')
+                                              .doc(chapter.id)
+                                              .collection('questions')
+                                              .doc(q.id)
+                                              .delete();
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text("QCM supprimé")),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => QcmFormPage(
+                                      courseId: course.id,
+                                      chapterId: chapter.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.quiz, color: primaryColor),
+                              label: Text("Ajouter / Modifier QCM", style: TextStyle(color: primaryColor)),
+                            ),
+                          ],
                         ),
                       );
                     },

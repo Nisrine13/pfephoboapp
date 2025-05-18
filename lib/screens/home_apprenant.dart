@@ -27,12 +27,35 @@ class _HomeApprenantState extends State<HomeApprenant> {
   String searchQuery = '';
   double selectedRating = 0;
 
+  int totalScore = 0;
+
+
   String _sortCriteria = 'title'; // title | rating
 
   @override
   void initState() {
     super.initState();
     _fetchUserProfilePhoto();
+    _fetchTotalScore();
+  }
+
+  Future<void> _fetchTotalScore() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collectionGroup('userScores')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    int score = 0;
+    for (var doc in snapshot.docs) {
+      score += (doc['score'] ?? 0) as int;
+    }
+
+    setState(() {
+      totalScore = score;
+    });
   }
 
   Future<void> _fetchUserProfilePhoto() async {
@@ -196,6 +219,41 @@ class _HomeApprenantState extends State<HomeApprenant> {
       body: Column(
         children: [
           const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: white,
+                  backgroundImage: AssetImage('assets/images/coins.png'),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Mes coins",
+                      style: TextStyle(
+                        color: darkGray,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      "$totalScore",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(10),
             child: TextField(

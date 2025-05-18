@@ -4,8 +4,15 @@ import 'package:chewie/chewie.dart';
 
 class SupabaseVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final VoidCallback? onVideoEnded;
 
-  const SupabaseVideoPlayer({super.key, required this.videoUrl});
+  const SupabaseVideoPlayer({
+    super.key,
+    required this.videoUrl,
+    this.onVideoEnded,
+  });
+
+
 
   @override
   State<SupabaseVideoPlayer> createState() => _SupabaseVideoPlayerState();
@@ -25,6 +32,15 @@ class _SupabaseVideoPlayerState extends State<SupabaseVideoPlayer> {
     _videoController = VideoPlayerController.network(widget.videoUrl);
 
     await _videoController!.initialize();
+
+    _videoController!.addListener(() {
+      final isEnded = _videoController!.value.position >= _videoController!.value.duration;
+
+      if (isEnded && widget.onVideoEnded != null) {
+        widget.onVideoEnded!();
+      }
+    });
+
 
     _chewieController = ChewieController(
       videoPlayerController: _videoController!,

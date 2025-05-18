@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pfephoboapp/pages/qcm_evaluation_page.dart';
+import 'package:pfephoboapp/pages/qcm_form_page.dart';
 import '../screens/supabase_video_player.dart';
 
 class CourseDetailsPage extends StatefulWidget {
@@ -120,7 +122,40 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                       style: TextStyle(fontSize: 16, color: darkGray),
                     ),
                     const SizedBox(height: 20),
-                    SupabaseVideoPlayer(videoUrl: data['videoUrl'] ?? '')
+                    SupabaseVideoPlayer(
+                      videoUrl: data['videoUrl'] ?? '',
+                      onVideoEnded: () async {
+                        final chapterId = chapter?.id;
+                        if (chapterId == null) return;
+
+                        final questionsSnapshot = await FirebaseFirestore.instance
+                            .collection('courses')
+                            .doc(widget.courseId)
+                            .collection('chapters')
+                            .doc(chapterId)
+                            .collection('questions')
+                            .get();
+
+                        if (questionsSnapshot.docs.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => QcmEvaluationPage(
+                                courseId: widget.courseId,
+                                chapterId: chapterId,
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Aucun QCM disponible pour ce chapitre."),
+                              backgroundColor: primaryColor,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
