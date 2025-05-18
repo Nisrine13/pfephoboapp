@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'YoutubeThumbnailPlayer.dart';
+import '../screens/supabase_video_player.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   final String courseId;
@@ -120,7 +120,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                       style: TextStyle(fontSize: 16, color: darkGray),
                     ),
                     const SizedBox(height: 20),
-                    YoutubeThumbnailPlayer(youtubeUrl: data['videoUrl'] ?? ''),
+                    SupabaseVideoPlayer(videoUrl: data['videoUrl'] ?? '')
                   ],
                 ),
               ),

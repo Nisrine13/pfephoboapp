@@ -1,6 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../services/supabase_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +20,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final Color lightGray = const Color(0xFFEEEEEE);
   final Color darkGray = const Color(0xFF757575);
   final Color white = Colors.white;
+
+  String? userPhotoUrl;
+  final String defaultPhotoPath = 'assets/images/defaultprofil.jpg'; // ✅ adapte ce chemin si c’est un autre fichier
 
   // Données utilisateur
   final User? user = FirebaseAuth.instance.currentUser;
@@ -38,14 +44,28 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserData() async {
     if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user!.uid)
-          .get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(user!.uid).get();
+      final data = doc.data();
+      if (data != null) {
+        setState(() {
+          _nameController.text = data['nom'] ?? '';
+          _surnameController.text = data['prenom'] ?? '';
+          userPhotoUrl = data['photoUrl'] ?? '';
+        });
+      }
+    }
+  }
 
+  Future<void> _changeProfilePhoto() async {
+    final result = await FilePicker.platform.pickFiles(withData: true, type: FileType.image);
+    if (result != null && result.files.single.bytes != null) {
+      final file = result.files.single;
+      final url = await SupabaseService().uploadFile(file, 'images/${file.name}', 'images');
+      await FirebaseFirestore.instance.collection('Users').doc(user!.uid).update({
+        'photoUrl': url,
+      });
       setState(() {
-        _nameController.text = userDoc['nom'] ?? '';
-        _surnameController.text = userDoc['prenom'] ?? '';
+        userPhotoUrl = url;
       });
     }
   }
@@ -266,6 +286,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -279,6 +300,31 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: lightGray,
+                  backgroundImage: userPhotoUrl != null && userPhotoUrl!.isNotEmpty
+                      ? NetworkImage(userPhotoUrl!)
+                      : AssetImage(defaultPhotoPath) as ImageProvider,
+                ),
+
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: InkWell(
+                    onTap: _changeProfilePhoto,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: primaryColor,
+                      child: Icon(Icons.edit, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             // Carte pour les informations personnelles
             Card(
               elevation: 4,

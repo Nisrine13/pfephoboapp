@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/signup_screen.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -17,6 +17,15 @@ void main() async {
     print("Firebase initialisé avec le projet: ${Firebase.app().options.projectId}");
   } catch (e) {
     print("ERREUR Firebase: ${e.toString()}");
+  }
+  try {
+    await supa.Supabase.initialize(
+      url: 'https://gclrqmbzfecsfldqmimj.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjbHJxbWJ6ZmVjc2ZsZHFtaW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0NzY2NDQsImV4cCI6MjA2MzA1MjY0NH0.23rXSWEFxfQNOFpTlJHMQY-40wfQXrgH-pSpRGHxnJU',
+    );
+    print("✅ Supabase initialisé");
+  } catch (e) {
+    print("ERREUR Supabase: ${e.toString()}");
   }
 
   runApp(const MyApp());

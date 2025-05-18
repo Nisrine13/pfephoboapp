@@ -4,6 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import '../services/supabase_service.dart'; // adapte le chemin si besoin
+
 
 class HomeFormateur extends StatefulWidget {
   const HomeFormateur({Key? key}) : super(key: key);
@@ -149,15 +153,40 @@ class _HomeFormateurState extends State<HomeFormateur> {
                   },
                 ),
                 const SizedBox(height: 10),
-                TextField(
-                  controller: imageUrlController,
-                  decoration: InputDecoration(
-                    labelText: 'URL de l\'image (facultatif)',
-                    labelStyle: TextStyle(color: darkGray),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
-                    ),
+                if (imageUrlController.text.isNotEmpty)
+                  Column(
+                    children: [
+                      Text("Aperçu de l'image :", style: TextStyle(color: darkGray)),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          imageUrlController.text,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ],
                   ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await FilePicker.platform.pickFiles(withData: true, type: FileType.image);
+                    if (result != null && result.files.single.bytes != null) {
+                      final file = result.files.single;
+                      final url = await SupabaseService().uploadFile(file, 'images/${file.name}', 'images');
+                      setState(() {
+                        imageUrlController.text = url;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("✅ Image téléchargée"), backgroundColor: primaryColor),
+                      );
+                    }
+
+                  },
+                  icon: Icon(Icons.image, color: Colors.white),
+                  label: Text("Choisir une image", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
                 ),
                 const SizedBox(height: 10),
                 for (int i = 0; i < chapterTitles.length; i++)
@@ -186,16 +215,54 @@ class _HomeFormateurState extends State<HomeFormateur> {
                           ),
                         ),
                       ),
-                      TextField(
-                        controller: chapterVideos[i],
-                        decoration: InputDecoration(
-                          labelText: 'Lien vidéo',
-                          labelStyle: TextStyle(color: darkGray),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: primaryColor),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['mp4', 'mov', 'webm'],
+                          );
+
+                          if (result != null && result.files.single.path != null) {
+                            final platformFile = result.files.single;
+                            final extension = platformFile.name.split('.').last.toLowerCase();
+
+                            if (!['mp4', 'mov', 'webm'].contains(extension)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("❌ Format non supporté"),
+                                  backgroundColor: importantRed,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final url = await SupabaseService().uploadFile(platformFile, 'videos/${platformFile.name}', 'videos');
+
+                            if (!mounted) return;
+
+                            setState(() {
+                              chapterVideos[i].text = url;
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("✅ Vidéo du chapitre ${i + 1} uploadée"), backgroundColor: primaryColor),
+                            );
+                          }
+                        },
+                        icon: Icon(Icons.video_library, color: Colors.white),
+                        label: Text("Choisir une vidéo", style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                      ),
+                      // ✅ Afficher l'URL de la vidéo si présente
+                      if (chapterVideos[i].text.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6.0, bottom: 10.0),
+                          child: Text(
+                            "Vidéo \${i + 1} ajoutée : \${chapterVideos[i].text}",
+                            style: TextStyle(color: darkGray, fontStyle: FontStyle.italic, fontSize: 12),
                           ),
                         ),
-                      ),
+                      const SizedBox(height: 10),
                     ],
                   ),
               ],
@@ -305,7 +372,7 @@ class _HomeFormateurState extends State<HomeFormateur> {
     final descriptionController = TextEditingController(text: course['description']);
     final categoryController = TextEditingController(text: course['category']);
     final levelController = TextEditingController(text: course['level']);
-    final imageUrlController = TextEditingController(text: course['imageUrl']);
+    String imageUrl = course['imageUrl'];
 
     await showDialog(
       context: context,
@@ -313,80 +380,49 @@ class _HomeFormateurState extends State<HomeFormateur> {
         builder: (context, setState) => AlertDialog(
           backgroundColor: lightGray,
           title: Text('Modifier le cours', style: TextStyle(color: primaryColor)),
-          content: Container(
-            height: MediaQuery.of(context).size.height * 0.6, // Increased height
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Titre du cours',
-                      labelStyle: TextStyle(color: darkGray),
-                    ),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(controller: titleController, decoration: InputDecoration(labelText: 'Titre')),
+                TextField(controller: descriptionController, decoration: InputDecoration(labelText: 'Description')),
+                TextField(controller: categoryController, decoration: InputDecoration(labelText: 'Catégorie')),
+                TextField(controller: levelController, decoration: InputDecoration(labelText: 'Niveau')),
+                SizedBox(height: 10),
+                if (imageUrl.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(imageUrl, height: 100),
                   ),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Description',
-                      labelStyle: TextStyle(color: darkGray),
-                    ),
-                  ),
-                  TextField(
-                    controller: categoryController,
-                    decoration: InputDecoration(
-                      labelText: 'Catégorie',
-                      labelStyle: TextStyle(color: darkGray),
-                    ),
-                  ),
-                  TextField(
-                    controller: levelController,
-                    decoration: InputDecoration(
-                      labelText: 'Niveau',
-                      labelStyle: TextStyle(color: darkGray),
-                    ),
-                  ),
-                  TextField(
-                    controller: imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: 'URL de l\'image',
-                      labelStyle: TextStyle(color: darkGray),
-                    ),
-                  ),
-                ],
-              ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final result = await FilePicker.platform.pickFiles(withData: true, type: FileType.image);
+                    if (result != null && result.files.single.bytes != null) {
+                      final file = result.files.single;
+                      final url = await SupabaseService().uploadFile(file, 'images/${file.name}', 'images');
+                      setState(() => imageUrl = url);
+                    }
+                  },
+                  icon: Icon(Icons.image),
+                  label: Text("Changer l'image"),
+                ),
+              ],
             ),
           ),
           actions: [
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: importantRed),
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
               onPressed: () async {
-                try {
-                  await _firestore.collection('courses').doc(course.id).update({
-                    'title': titleController.text,
-                    'description': descriptionController.text,
-                    'category': categoryController.text,
-                    'level': levelController.text,
-                    'imageUrl': imageUrlController.text,
-                  });
-                  Navigator.pop(context);
-                  fetchCourses();
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Erreur lors de la modification"),
-                      backgroundColor: importantRed,
-                    ),
-                  );
-                }
+                await _firestore.collection('courses').doc(course.id).update({
+                  'title': titleController.text,
+                  'description': descriptionController.text,
+                  'category': categoryController.text,
+                  'level': levelController.text,
+                  'imageUrl': imageUrl,
+                });
+                Navigator.pop(context);
+                fetchCourses();
               },
-              child: Text('Enregistrer', style: TextStyle(color: Colors.white)),
+              child: Text('Enregistrer'),
             ),
           ],
         ),
@@ -404,12 +440,8 @@ class _HomeFormateurState extends State<HomeFormateur> {
         child: Column(
           children: [
             Text(
-              'Chapitres du cours: ${course['title']}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
+              'Chapitres du cours : ${course['title']}',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
             ),
             Divider(),
             Expanded(
@@ -421,27 +453,33 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     .orderBy('index')
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
+                  if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
                   final chapters = snapshot.data!.docs;
                   return ListView.builder(
                     itemCount: chapters.length,
                     itemBuilder: (context, index) {
                       final chapter = chapters[index];
                       return Card(
-                        margin: EdgeInsets.symmetric(vertical: 4),
+                        margin: EdgeInsets.symmetric(vertical: 6),
                         child: ListTile(
-                          title: Text(chapter['title']),
+                          leading: chapter['videoUrl'] != null
+                              ? Icon(Icons.play_circle_filled, color: primaryColor)
+                              : Icon(Icons.videocam_off, color: darkGray),
+                          title: Text(chapter['title'], style: TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(chapter['summary']),
-                          trailing: chapters.length > 1
-                              ? IconButton(
-                            icon: Icon(Icons.delete, color: importantRed),
-                            onPressed: () => _deleteChapter(course.id, chapter.id),
-                          )
-                              : null,
-                          onTap: () => _editChapter(course.id, chapter),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit, color: primaryColor),
+                                onPressed: () => _editChapter(course.id, chapter),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, color: importantRed),
+                                onPressed: () => _deleteChapter(course.id, chapter.id),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -458,7 +496,7 @@ class _HomeFormateurState extends State<HomeFormateur> {
   Future<void> _editChapter(String courseId, DocumentSnapshot chapter) async {
     final titleController = TextEditingController(text: chapter['title']);
     final summaryController = TextEditingController(text: chapter['summary']);
-    final videoUrlController = TextEditingController(text: chapter['videoUrl']);
+    String videoUrl = chapter['videoUrl'];
 
     await showDialog(
       context: context,
@@ -466,39 +504,46 @@ class _HomeFormateurState extends State<HomeFormateur> {
         title: Text('Modifier le chapitre'),
         content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(labelText: 'Titre'),
-              ),
-              TextField(
-                controller: summaryController,
-                decoration: InputDecoration(labelText: 'Résumé'),
-              ),
-              TextField(
-                controller: videoUrlController,
-                decoration: InputDecoration(labelText: 'Lien vidéo'),
+              TextField(controller: titleController, decoration: InputDecoration(labelText: 'Titre')),
+              TextField(controller: summaryController, decoration: InputDecoration(labelText: 'Résumé')),
+              if (videoUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.video_library, color: primaryColor),
+                      SizedBox(width: 8),
+                      Expanded(child: Text("Vidéo actuelle ajoutée", style: TextStyle(fontSize: 13))),
+                    ],
+                  ),
+                ),
+              TextButton.icon(
+                onPressed: () async {
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['mp4', 'mov', 'webm'],
+                  );
+                  if (result != null && result.files.single.bytes != null) {
+                    final file = result.files.single;
+                    final url = await SupabaseService().uploadFile(file, 'videos/${file.name}', 'videos');
+                    videoUrl = url;
+                  }
+                },
+                icon: Icon(Icons.upload_file),
+                label: Text("Changer la vidéo"),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
           ElevatedButton(
             onPressed: () async {
-              await _firestore
-                  .collection('courses')
-                  .doc(courseId)
-                  .collection('chapters')
-                  .doc(chapter.id)
-                  .update({
+              await _firestore.collection('courses').doc(courseId).collection('chapters').doc(chapter.id).update({
                 'title': titleController.text,
                 'summary': summaryController.text,
-                'videoUrl': videoUrlController.text,
+                'videoUrl': videoUrl,
               });
               Navigator.pop(context);
             },
@@ -636,61 +681,95 @@ class _HomeFormateurState extends State<HomeFormateur> {
               itemCount: _courses.length,
               itemBuilder: (context, index) {
                 var course = _courses[index];
-                return Card(
+                return Container(
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: ListTile(
-                    leading: IconButton(
-                      icon: Icon(Icons.book, color: primaryColor),
-                      onPressed: () => _showChapters(course),
-                    ),
-                    title: Text(
-                      course['title'] ?? 'Sans titre',
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
                       ),
-                    ),
-                    subtitle: Column(
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          course['description'] ?? '',
-                          style: TextStyle(color: darkGray),
+                        GestureDetector(
+                          onTap: () => _showChapters(course),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: course['imageUrl'] != null && course['imageUrl'].toString().isNotEmpty
+                                ? Image.network(
+                              course['imageUrl'],
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            )
+                                : Container(
+                              width: 80,
+                              height: 80,
+                              color: lightGray,
+                              child: Icon(Icons.image_not_supported, color: darkGray),
+                            ),
+                          ),
                         ),
-                        SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.star, color: accentYellow, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              '${(course['averageRating'] ?? 0.0).toStringAsFixed(1)}/5',
-                              style: TextStyle(
-                                color: darkGray,
-                                fontSize: 14,
+
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                course['title'] ?? 'Sans titre',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                ),
                               ),
+                              SizedBox(height: 4),
+                              Text(
+                                course['description'] ?? '',
+                                style: TextStyle(
+                                  color: darkGray,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.star, color: accentYellow, size: 16),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '${(course['averageRating'] ?? 0.0).toStringAsFixed(1)}/5',
+                                    style: TextStyle(color: darkGray),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit, color: primaryColor),
+                              onPressed: () => _editCourse(course),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete, color: importantRed),
+                              onPressed: () => deleteCourse(course.id),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit, color: primaryColor),
-                        onPressed: () => _editCourse(course),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete, color: importantRed),
-                        onPressed: () => deleteCourse(course.id),
-                      ),
-                    ],
-                  ),
                   ),
                 );
               },

@@ -24,6 +24,7 @@ dependencies:
   firebase_dynamic_links: 6.1.5 # (discontinued)
   shared_preferences: ^2.2.2
   firebase_storage: ^12.4.5
+  supabase_flutter: ^1.10.25 # ou la dernière version stable
   image_picker: ^1.0.4
   file_picker: ^10.1.2 # version compatible et stable
   path: ^1.9.0
@@ -32,6 +33,7 @@ dependencies:
   # Autres plugins utiles
   google_sign_in: ^6.2.1
   video_player: ^2.8.6
+  chewie: ^1.6.0
   youtube_player_flutter: ^9.1.1  # Version stable sans conflit
   permission_handler: ^11.0.0
 

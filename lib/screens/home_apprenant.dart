@@ -13,7 +13,6 @@ class HomeApprenant extends StatefulWidget {
 }
 
 class _HomeApprenantState extends State<HomeApprenant> {
-  // Palette de couleurs
   final Color primaryColor = const Color(0xFF30B0C7);
   final Color accentYellow = const Color(0xFFFFD700);
   final Color importantRed = const Color(0xFFE53935);
@@ -21,8 +20,36 @@ class _HomeApprenantState extends State<HomeApprenant> {
   final Color darkGray = const Color(0xFF757575);
   final Color white = Colors.white;
 
+  String? userPhotoUrl;
+  final String defaultPhotoPath = 'assets/images/defaultprofil.jpg';
+
+
   String searchQuery = '';
   double selectedRating = 0;
+
+  String _sortCriteria = 'title'; // title | rating
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfilePhoto();
+  }
+
+  Future<void> _fetchUserProfilePhoto() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(user.uid).get();
+      final data = doc.data();
+      if (data != null) {
+        setState(() {
+          userPhotoUrl = data['photoUrl'] ?? '';
+        });
+        print("USER PHOTO URL => $userPhotoUrl");
+
+      }
+    }
+  }
+
 
   Future<void> _showRatingDialog(String courseId) async {
     double tempRating = 0;
@@ -58,7 +85,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Ferme le dialog avant enregistrement
+              Navigator.pop(context);
               await _updateRating(courseId, tempRating);
             },
             style: ElevatedButton.styleFrom(
@@ -85,7 +112,6 @@ class _HomeApprenantState extends State<HomeApprenant> {
 
       await ratingRef.set({'rating': rating});
 
-      // Mise à jour de la note moyenne dans le document du cours
       final ratingsSnapshot = await FirebaseFirestore.instance
           .collection('courses')
           .doc(courseId)
@@ -147,14 +173,23 @@ class _HomeApprenantState extends State<HomeApprenant> {
         backgroundColor: primaryColor,
         iconTheme: IconThemeData(color: white),
         actions: [
-          IconButton(
-            icon: Icon(Icons.person_outline, color: lightGray), // Icône en gris
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProfilePage()), // Page à créer
+                MaterialPageRoute(builder: (context) => ProfilePage()),
               );
             },
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: lightGray,
+                backgroundImage: userPhotoUrl != null && userPhotoUrl!.isNotEmpty
+                    ? NetworkImage(userPhotoUrl!)
+                    : AssetImage(defaultPhotoPath) as ImageProvider,
+              ),
+            ),
           ),
         ],
       ),
@@ -181,6 +216,38 @@ class _HomeApprenantState extends State<HomeApprenant> {
                   borderSide: BorderSide.none,
                 ),
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text("Trier par :", style: TextStyle(color: darkGray)),
+                const SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: _sortCriteria,
+                  icon: const Icon(Icons.arrow_drop_down),
+                  underline: Container(height: 0),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'title',
+                      child: Text('Titre (A-Z)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'rating',
+                      child: Text('Note moyenne'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _sortCriteria = value;
+                      });
+                    }
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -212,6 +279,19 @@ class _HomeApprenantState extends State<HomeApprenant> {
                       author.contains(searchQuery) ||
                       category.contains(searchQuery);
                 }).toList();
+
+                filteredCourses.sort((a, b) {
+                  if (_sortCriteria == 'rating') {
+                    double ratingA = (a['averageRating'] ?? 0.0).toDouble();
+                    double ratingB = (b['averageRating'] ?? 0.0).toDouble();
+                    return ratingB.compareTo(ratingA); // du plus grand au plus petit
+                  } else {
+                    String titleA = (a['title'] ?? '').toLowerCase();
+                    String titleB = (b['title'] ?? '').toLowerCase();
+                    return titleA.compareTo(titleB); // A-Z
+                  }
+                });
+
 
                 return ListView.builder(
                   itemCount: filteredCourses.length,
