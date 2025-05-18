@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../pages/course_details_page.dart';
+import '../pages/notifications_page.dart';
 import 'profile_page.dart';
 
 class HomeApprenant extends StatefulWidget {
@@ -259,7 +260,10 @@ class _HomeApprenantState extends State<HomeApprenant> {
                 Spacer(),
                 GestureDetector(
                   onTap: () {
-                    // Action future
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => NotificationsPage()),
+                    );
                   },
                   child: Stack(
                     alignment: Alignment.center,

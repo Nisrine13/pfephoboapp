@@ -67,6 +67,55 @@ class _HomeFormateurState extends State<HomeFormateur> {
     }
   }
 
+  void _replyToComment(String courseId, String chapterId, String commentId, String userId) {
+    final replyController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Répondre au commentaire"),
+        content: TextField(
+          controller: replyController,
+          decoration: InputDecoration(hintText: "Votre réponse..."),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Annuler", style: TextStyle(color: importantRed)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final replyText = replyController.text.trim();
+              if (replyText.isNotEmpty) {
+                final now = DateTime.now();
+                await _firestore
+                    .collection('courses')
+                    .doc(courseId)
+                    .collection('chapters')
+                    .doc(chapterId)
+                    .collection('comments')
+                    .doc(commentId)
+                    .update({
+                  'reply': replyText,
+                  'replyTimestamp': Timestamp.fromDate(DateTime.now()), // ✅ CORRECTION IMPORTANTE
+                  'repliedBy': _auth.currentUser!.uid,
+                  'isReplyRead': false,
+                });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Réponse envoyée avec succès."), backgroundColor: primaryColor),
+                );
+              }
+            },
+            child: Text("Envoyer", style: TextStyle(color: primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   Future<void> addCourse() async {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -559,6 +608,60 @@ class _HomeFormateurState extends State<HomeFormateur> {
                                             SnackBar(content: Text("QCM supprimé")),
                                           );
                                         },
+                                      ),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: _firestore
+                                  .collection('courses')
+                                  .doc(course.id)
+                                  .collection('chapters')
+                                  .doc(chapter.id)
+                                  .collection('comments')
+                                  .orderBy('timestamp', descending: true)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) return CircularProgressIndicator();
+                                final comments = snapshot.data!.docs;
+
+                                if (comments.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Aucun commentaire pour ce chapitre."),
+                                  );
+                                }
+
+                                return Column(
+                                  children: comments.map((commentDoc) {
+                                    final data = commentDoc.data() as Map<String, dynamic>;
+                                    return Card(
+                                      color: Colors.white,
+                                      margin: EdgeInsets.symmetric(vertical: 6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text("${data['userName'] ?? 'Utilisateur'} : ${data['comment']}", style: TextStyle(fontWeight: FontWeight.w500)),
+                                            if (data['reply'] != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 6),
+                                                child: Text("\u2192 Votre réponse : ${data['reply']}", style: TextStyle(color: Colors.green[800])),
+                                              ),
+                                            if (data['reply'] == null)
+                                              Align(
+                                                alignment: Alignment.centerRight,
+                                                child: TextButton.icon(
+                                                  icon: Icon(Icons.reply, color: primaryColor),
+                                                  label: Text("Répondre", style: TextStyle(color: primaryColor)),
+                                                  onPressed: () => _replyToComment(course.id, chapter.id, commentDoc.id, data['userId']),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     );
                                   }).toList(),
