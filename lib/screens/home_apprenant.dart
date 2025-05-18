@@ -28,6 +28,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
   double selectedRating = 0;
 
   int totalScore = 0;
+  int unreadReplies = 0;
 
 
   String _sortCriteria = 'title'; // title | rating
@@ -37,7 +38,25 @@ class _HomeApprenantState extends State<HomeApprenant> {
     super.initState();
     _fetchUserProfilePhoto();
     _fetchTotalScore();
+    _countUnreadReplies();
   }
+
+  Future<void> _countUnreadReplies() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collectionGroup('comments')
+        .where('userId', isEqualTo: userId)
+        .where('reply', isGreaterThan: '')
+        .where('isReplyRead', isEqualTo: false)
+        .get();
+
+    setState(() {
+      unreadReplies = snapshot.docs.length;
+    });
+  }
+
 
   Future<void> _fetchTotalScore() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -222,34 +241,50 @@ class _HomeApprenantState extends State<HomeApprenant> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: white,
-                  backgroundImage: AssetImage('assets/images/coins.png'),
-                ),
-                const SizedBox(width: 12),
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Mes coins",
-                      style: TextStyle(
-                        color: darkGray,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    Icon(Icons.monetization_on, color: accentYellow, size: 36),
+                    const SizedBox(height: 4),
                     Text(
                       "$totalScore",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: primaryColor,
                       ),
                     ),
                   ],
+                ),
+                Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    // Action future
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(Icons.message, color: primaryColor, size: 30),
+                      if (unreadReplies > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Text(
+                              '$unreadReplies',
+                              style: TextStyle(color: Colors.white, fontSize: 10),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
