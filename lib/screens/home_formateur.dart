@@ -266,44 +266,44 @@ class _HomeFormateurState extends State<HomeFormateur> {
                       ),
                       const SizedBox(height: 8),
                       Center(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await FilePicker.platform.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: ['mp4', 'mov', 'webm'],
-                          );
-
-                          if (result != null && result.files.single.path != null) {
-                            final platformFile = result.files.single;
-                            final extension = platformFile.name.split('.').last.toLowerCase();
-
-                            if (!['mp4', 'mov', 'webm'].contains(extension)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("❌ Format non supporté"),
-                                  backgroundColor: importantRed,
-                                ),
-                              );
-                              return;
-                            }
-
-                            final url = await SupabaseService().uploadFile(platformFile, 'videos/${platformFile.name}', 'videos');
-
-                            if (!mounted) return;
-
-                            setState(() {
-                              chapterVideos[i].text = url;
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("✅ Vidéo du chapitre ${i + 1} uploadée"), backgroundColor: primaryColor),
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['mp4', 'mov', 'webm'],
                             );
-                          }
-                        },
-                        icon: Icon(Icons.video_library, color: Colors.white),
-                        label: Text("Choisir une vidéo", style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-                      ),
+
+                            if (result != null && result.files.single.path != null) {
+                              final platformFile = result.files.single;
+                              final extension = platformFile.name.split('.').last.toLowerCase();
+
+                              if (!['mp4', 'mov', 'webm'].contains(extension)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("❌ Format non supporté"),
+                                    backgroundColor: importantRed,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final url = await SupabaseService().uploadFile(platformFile, 'videos/${platformFile.name}', 'videos');
+
+                              if (!mounted) return;
+
+                              setState(() {
+                                chapterVideos[i].text = url;
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("✅ Vidéo du chapitre ${i + 1} uploadée"), backgroundColor: primaryColor),
+                              );
+                            }
+                          },
+                          icon: Icon(Icons.video_library, color: Colors.white),
+                          label: Text("Choisir une vidéo", style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                        ),
                       ),
                       // ✅ Afficher l'URL de la vidéo si présente
                       if (chapterVideos[i].text.isNotEmpty)
@@ -512,179 +512,175 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     itemBuilder: (context, index) {
                       final chapter = chapters[index];
                       return Card(
-                        margin: EdgeInsets.symmetric(vertical: 6),
-                        child: ExpansionTile(
-                          leading: chapter['videoUrl'] != null
-                              ? Icon(Icons.play_circle_filled, color: primaryColor)
-                              : Icon(Icons.videocam_off, color: darkGray),
-                          title: Text(chapter['title'], style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(chapter['summary']),
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit, color: primaryColor),
-                                  tooltip: "Modifier le chapitre",
-                                  onPressed: () => _editChapter(course.id, chapter),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete, color: importantRed),
-                                  tooltip: "Supprimer le chapitre",
-                                  onPressed: () => _deleteChapter(course.id, chapter.id),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.quiz, color: Colors.green),
-                                  tooltip: "Ajouter QCM",
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => QcmFormPage(
-                                          courseId: course.id,
-                                          chapterId: chapter.id,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            StreamBuilder<QuerySnapshot>(
-                              stream: _firestore
-                                  .collection('courses')
-                                  .doc(course.id)
-                                  .collection('chapters')
-                                  .doc(chapter.id)
-                                  .collection('questions')
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: CircularProgressIndicator(),
-                                  );
-                                }
-
-                                final questions = snapshot.data!.docs;
-                                if (questions.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text("Aucun QCM disponible."),
-                                  );
-                                }
-
-                                return Column(
-                                  children: questions.map((q) {
-                                    final data = q.data() as Map<String, dynamic>;
-                                    return ListTile(
-                                      title: Text(data['questionText']),
-                                      subtitle: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: List.generate(data['options'].length, (i) {
-                                          final isCorrect = i == data['correctIndex'];
-                                          return Text(
-                                            "${String.fromCharCode(65 + i)}. ${data['options'][i]}",
-                                            style: TextStyle(
-                                              fontWeight: isCorrect ? FontWeight.bold : FontWeight.normal,
-                                              color: isCorrect ? Colors.green : darkGray,
-                                            ),
-                                          );
-                                        }),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: Icon(Icons.delete, color: importantRed),
-                                        onPressed: () async {
-                                          await _firestore
-                                              .collection('courses')
-                                              .doc(course.id)
-                                              .collection('chapters')
-                                              .doc(chapter.id)
-                                              .collection('questions')
-                                              .doc(q.id)
-                                              .delete();
-
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text("QCM supprimé")),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                            StreamBuilder<QuerySnapshot>(
-                              stream: _firestore
-                                  .collection('courses')
-                                  .doc(course.id)
-                                  .collection('chapters')
-                                  .doc(chapter.id)
-                                  .collection('comments')
-                                  .orderBy('timestamp', descending: true)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) return CircularProgressIndicator();
-                                final comments = snapshot.data!.docs;
-
-                                if (comments.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text("Aucun commentaire pour ce chapitre."),
-                                  );
-                                }
-
-                                return Column(
-                                  children: comments.map((commentDoc) {
-                                    final data = commentDoc.data() as Map<String, dynamic>;
-                                    return Card(
-                                      color: Colors.white,
-                                      margin: EdgeInsets.symmetric(vertical: 6),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("${data['userName'] ?? 'Utilisateur'} : ${data['comment']}", style: TextStyle(fontWeight: FontWeight.w500)),
-                                            if (data['reply'] != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 6),
-                                                child: Text("\u2192 Votre réponse : ${data['reply']}", style: TextStyle(color: Colors.green[800])),
-                                              ),
-                                            if (data['reply'] == null)
-                                              Align(
-                                                alignment: Alignment.centerRight,
-                                                child: TextButton.icon(
-                                                  icon: Icon(Icons.reply, color: primaryColor),
-                                                  label: Text("Répondre", style: TextStyle(color: primaryColor)),
-                                                  onPressed: () => _replyToComment(course.id, chapter.id, commentDoc.id, data['userId']),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => QcmFormPage(
-                                      courseId: course.id,
-                                      chapterId: chapter.id,
-                                    ),
+                          margin: EdgeInsets.symmetric(vertical: 6),
+                          child: ExpansionTile(
+                            leading: chapter['videoUrl'] != null
+                                ? Icon(Icons.play_circle_filled, color: primaryColor)
+                                : Icon(Icons.videocam_off, color: darkGray),
+                            title: Text(chapter['title'], style: TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(chapter['summary']),
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: primaryColor),
+                                    tooltip: "Modifier le chapitre",
+                                    onPressed: () => _editChapter(course.id, chapter),
                                   ),
-                                );
-                              },
-                              icon: Icon(Icons.quiz, color: primaryColor),
-                              label: Text("Ajouter / Modifier QCM", style: TextStyle(color: primaryColor)),
-                            ),
-                          ],
-                        ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: importantRed),
+                                    tooltip: "Supprimer le chapitre",
+                                    onPressed: () => _deleteChapter(course.id, chapter.id),
+                                  ),
+                                ],
+                              ),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: _firestore
+                                    .collection('courses')
+                                    .doc(course.id)
+                                    .collection('chapters')
+                                    .doc(chapter.id)
+                                    .collection('questions')
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) return CircularProgressIndicator();
+                                  final questions = snapshot.data!.docs;
+                                  if (questions.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text("Aucun QCM disponible."),
+                                    );
+                                  }
+                                  return Column(
+                                    children: questions.map((q) {
+                                      final data = q.data() as Map<String, dynamic>;
+                                      return ListTile(
+                                        title: Text(data['questionText']),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: List.generate(data['options'].length, (i) {
+                                            final isCorrect = i == data['correctIndex'];
+                                            return Text(
+                                              "${String.fromCharCode(65 + i)}. ${data['options'][i]}",
+                                              style: TextStyle(
+                                                fontWeight: isCorrect ? FontWeight.bold : FontWeight.normal,
+                                                color: isCorrect ? Colors.green : darkGray,
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                        trailing: IconButton(
+                                          icon: Icon(Icons.delete, color: importantRed),
+                                          onPressed: () async {
+                                            await _firestore
+                                                .collection('courses')
+                                                .doc(course.id)
+                                                .collection('chapters')
+                                                .doc(chapter.id)
+                                                .collection('questions')
+                                                .doc(q.id)
+                                                .delete();
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text("QCM supprimé")),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => QcmFormPage(courseId: course.id, chapterId: chapter.id),
+                                    ),
+                                  );
+                                },
+                                icon: Icon(Icons.quiz, color: primaryColor),
+                                label: Text("Ajouter / Modifier QCM", style: TextStyle(color: primaryColor)),
+                              ),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: _firestore
+                                    .collection('courses')
+                                    .doc(course.id)
+                                    .collection('chapters')
+                                    .doc(chapter.id)
+                                    .collection('comments')
+                                    .orderBy('timestamp', descending: true)
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) return CircularProgressIndicator();
+                                  final comments = snapshot.data!.docs;
+                                  if (comments.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text("Aucun commentaire pour ce chapitre."),
+                                    );
+                                  }
+                                  return Column(
+                                    children: comments.map((commentDoc) {
+                                      final data = commentDoc.data() as Map<String, dynamic>;
+                                      return Card(
+                                        margin: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text("${data['userName'] ?? 'Utilisateur'} : ${data['comment']}",
+                                                  style: TextStyle(fontWeight: FontWeight.w500)),
+                                              if (data['reply'] != null)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 6),
+                                                  child: Text("→ Votre réponse : ${data['reply']}", style: TextStyle(color: Colors.green[800])),
+                                                ),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  if (data['reply'] == null)
+                                                    TextButton.icon(
+                                                      onPressed: () => _replyToComment(course.id, chapter.id, commentDoc.id, data['userId']),
+                                                      icon: Icon(Icons.reply, color: primaryColor),
+                                                      label: Text("Répondre", style: TextStyle(color: primaryColor)),
+                                                    ),
+                                                  if (data['reply'] != null)
+                                                    IconButton(
+                                                      icon: Icon(Icons.edit, color: primaryColor),
+                                                      onPressed: () => _replyToComment(course.id, chapter.id, commentDoc.id, data['userId']),
+                                                      tooltip: "Modifier la réponse",
+                                                    ),
+                                                  IconButton(
+                                                    icon: Icon(Icons.delete, color: importantRed),
+                                                    onPressed: () async {
+                                                      await _firestore
+                                                          .collection('courses')
+                                                          .doc(course.id)
+                                                          .collection('chapters')
+                                                          .doc(chapter.id)
+                                                          .collection('comments')
+                                                          .doc(commentDoc.id)
+                                                          .delete();
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(content: Text("Commentaire supprimé")),
+                                                      );
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          )
                       );
                     },
                   );
