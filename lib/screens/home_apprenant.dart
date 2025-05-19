@@ -42,56 +42,71 @@ class _HomeApprenantState extends State<HomeApprenant> {
     _countUnreadReplies();
   }
 
+
   Future<void> _countUnreadReplies() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
-    final snapshot = await FirebaseFirestore.instance
-        .collectionGroup('comments')
-        .where('userId', isEqualTo: userId)
-        .where('reply', isGreaterThan: '')
-        .where('isReplyRead', isEqualTo: false)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collectionGroup('comments')
+          .where('userId', isEqualTo: userId)
+          .where('reply', isGreaterThan: '')
+          .where('isReplyRead', isEqualTo: false)
+          .get();
 
-    setState(() {
-      unreadReplies = snapshot.docs.length;
-    });
+      setState(() {
+        unreadReplies = snapshot.docs.length;
+      });
+    } catch (e) {
+      print("⚠️ Firestore error in _countUnreadReplies: $e");
+    }
   }
+
 
 
   Future<void> _fetchTotalScore() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
-    final snapshot = await FirebaseFirestore.instance
-        .collectionGroup('userScores')
-        .where('userId', isEqualTo: userId)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('userScores')
+          .where('userId', isEqualTo: userId)
+          .get();
 
-    int score = 0;
-    for (var doc in snapshot.docs) {
-      score += (doc['score'] ?? 0) as int;
+      int score = 0;
+      for (var doc in snapshot.docs) {
+        score += (doc['score'] ?? 0) as int;
+      }
+
+      setState(() {
+        totalScore = score;
+      });
+    } catch (e) {
+      print("⚠️ Firestore error in _fetchTotalScore: $e");
     }
-
-    setState(() {
-      totalScore = score;
-    });
   }
+
 
   Future<void> _fetchUserProfilePhoto() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(user.uid).get();
-      final data = doc.data();
-      if (data != null) {
-        setState(() {
-          userPhotoUrl = data['photoUrl'] ?? '';
-        });
-        print("USER PHOTO URL => $userPhotoUrl");
-
+      try {
+        final doc = await FirebaseFirestore.instance.collection('Users').doc(user.uid).get();
+        final data = doc.data();
+        if (data != null) {
+          setState(() {
+            userPhotoUrl = data['photoUrl'] ?? '';
+          });
+          print("USER PHOTO URL => $userPhotoUrl");
+        }
+      } catch (e) {
+        print("⚠️ Firestore error in _fetchUserProfilePhoto: $e");
       }
     }
   }
+
 
 
   Future<void> _showRatingDialog(String courseId) async {
@@ -487,7 +502,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
                                       onPressed: () => _showRatingDialog(courseId),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: accentYellow,
-                                        foregroundColor: darkGray,
+                                        foregroundColor: white,
                                       ),
                                       child: const Text('Évaluer'),
                                     ),

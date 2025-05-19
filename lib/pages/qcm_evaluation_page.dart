@@ -45,6 +45,23 @@ class _QcmEvaluationPageState extends State<QcmEvaluationPage> {
     });
   }
 
+  Future<void> addUserScoreToGlobalCollection(int score) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('userScores').add({
+        'userId': userId,
+        'score': score,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      print("✅ Score global enregistré : $score");
+    } catch (e) {
+      print("❌ Erreur en enregistrant le score global : $e");
+    }
+  }
+
+
   void evaluate() {
     score = 0;
     for (int i = 0; i < questions.length; i++) {
@@ -65,6 +82,9 @@ class _QcmEvaluationPageState extends State<QcmEvaluationPage> {
         .collection('qcm_results')
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .set({'score': score, 'total': questions.length});
+
+    // ✅ Enregistrement global dans userScores
+    addUserScoreToGlobalCollection(score);
   }
 
   String getFeedbackEmoji() {
