@@ -22,7 +22,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
   final Color _darkBrown = const Color(0xFF805D3B);
   final Color _primaryBrown = const Color(0xFFECBF25);
   final Color _white = Colors.white;
-  final Color _white70 = Colors.white70;
+  final Color _white70 = const Color(0xA9FFFFFF);
 
   // Photo utilisateur
   String? userPhotoUrl;
@@ -123,8 +123,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Choisissez une note :',
-                style: TextStyle(color: _darkBrown)),
+            Text('Choisissez une note :', style: TextStyle(color: _darkBrown)),
             const SizedBox(height: 10),
             RatingBar.builder(
               initialRating: 0,
@@ -132,8 +131,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
               direction: Axis.horizontal,
               allowHalfRating: false,
               itemCount: 5,
-              itemBuilder: (context, _) =>
-                  Icon(Icons.star, color: _primaryBrown),
+              itemBuilder: (context, _) => Icon(Icons.star, color: _primaryBrown),
               onRatingUpdate: (rating) {
                 tempRating = rating;
               },
@@ -185,7 +183,10 @@ class _HomeApprenantState extends State<HomeApprenant> {
         total += (doc.data()['rating'] ?? 0).toDouble();
       }
       double newAverage = total / ratingsSnapshot.docs.length;
-      await FirebaseFirestore.instance.collection('courses').doc(courseId).update({
+      await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .update({
         'averageRating': newAverage,
         'ratingCount': ratingsSnapshot.docs.length,
       });
@@ -276,15 +277,14 @@ class _HomeApprenantState extends State<HomeApprenant> {
                       Text("Trier par :", style: TextStyle(color: _darkBrown)),
                       const SizedBox(width: 8),
                       Container(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: _beigeWhite.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: DropdownButton<String>(
                           value: _sortCriteria,
-                          dropdownColor: _white, // fond blanc ou beige ici
+                          dropdownColor: _white, // fond blanc
                           icon: Icon(Icons.arrow_drop_down, color: _darkBrown),
                           underline: const SizedBox.shrink(),
                           style: TextStyle(color: _darkBrown),
@@ -358,136 +358,112 @@ class _HomeApprenantState extends State<HomeApprenant> {
                       builder: (context, snapRating) {
                         final averageRating = snapRating.data?.toStringAsFixed(1) ?? '0.0';
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          color: _white.withOpacity(0.9),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    // Vignette carrée de côté w
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: course['imageUrl'] != null &&
-                                          course['imageUrl'].toString().isNotEmpty
-                                          ? Image.network(
-                                        course['imageUrl'],
-                                        width: w,
-                                        height: w, // hauteur = largeur
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(
-                                              width: w,
-                                              height: w,
-                                              color: _beigeWhite.withOpacity(0.5),
-                                              child: Icon(Icons.image, color: _darkBrown),
-                                            ),
-                                      )
-                                          : Container(
-                                        width: w,
-                                        height: w,
-                                        color: _beigeWhite.withOpacity(0.5),
-                                        child: Icon(Icons.image, color: _darkBrown),
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 8), // espace horizontal réduit
-
-                                    // Infos à droite (2/3 largeur)
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            course['title'],
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                              color: _darkBrown,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2), // espacement vertical réduit
-                                          Text(
-                                            course['description'],
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: _darkBrown.withOpacity(0.8),
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Row(
-                                            children: [
-                                              Icon(Icons.star, color: _primaryBrown, size: 16),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                averageRating,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: _darkBrown.withOpacity(0.7),
-                                                ),
+                        return InkWell(
+                          onTap: () {
+                            // Sur un tap sur la carte, on navigue vers les détails
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CourseDetailsPage(courseId: courseId),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            color: _white.withOpacity(0.9),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      // Vignette carrée de côté w
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: course['imageUrl'] != null &&
+                                            course['imageUrl'].toString().isNotEmpty
+                                            ? Image.network(
+                                          course['imageUrl'],
+                                          width: w,
+                                          height: w, // hauteur = largeur
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              Container(
+                                                width: w,
+                                                height: w,
+                                                color: _beigeWhite.withOpacity(0.5),
+                                                child: Icon(Icons.image, color: _darkBrown),
                                               ),
-                                            ],
-                                          ),
-                                        ],
+                                        )
+                                            : Container(
+                                          width: w,
+                                          height: w,
+                                          color: _beigeWhite.withOpacity(0.5),
+                                          child: Icon(Icons.image, color: _darkBrown),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
 
-                                const SizedBox(height: 8),
+                                      const SizedBox(width: 8), // espace horizontal réduit
 
-                                // Boutons « Voir le cours » et « Évaluer » plus petits
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => CourseDetailsPage(courseId: courseId),
+                                      // Infos à droite (2/3 largeur)
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              course['title'],
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: _darkBrown,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: _darkBrown,
-                                          foregroundColor: _white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(vertical: 6), // hauteur réduite
+                                            const SizedBox(height: 2), // espacement vertical réduit
+                                            Text(
+                                              course['description'],
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: _darkBrown.withOpacity(0.8),
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.star, color: _primaryBrown, size: 16),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  averageRating,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: _darkBrown.withOpacity(0.7),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                        child: const Text('Voir'),
                                       ),
-                                    ),
-                                    const SizedBox(width: 6), // espace horizontal réduit
-                                    Expanded(
-                                      child: OutlinedButton(
+
+                                      // Icône Évaluer (jaune)
+                                      IconButton(
                                         onPressed: () => _showRatingDialog(courseId),
-                                        style: OutlinedButton.styleFrom(
-                                          side: BorderSide(color: _primaryBrown),
-                                          foregroundColor: _primaryBrown,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(vertical: 6), // hauteur réduite
-                                        ),
-                                        child: const Text('Évaluer'),
+                                        icon: Icon(Icons.star, color: _primaryBrown),
+                                        splashRadius: 20,
+                                        tooltip: 'Évaluer ce cours',
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                  // Les boutons « Voir » et « Évaluer » sont supprimés
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -515,9 +491,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
         index: _currentIndex,
         children: [
           _buildNotificationsTab(),
-
           SafeArea(child: _buildHomeTab()),
-
           _buildProfileTab(),
         ],
       ),
@@ -543,12 +517,10 @@ class _HomeApprenantState extends State<HomeApprenant> {
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      constraints:
-                      const BoxConstraints(minWidth: 12, minHeight: 12),
+                      constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
                       child: Text(
                         '$unreadReplies',
-                        style:
-                        const TextStyle(color: Colors.white, fontSize: 9),
+                        style: const TextStyle(color: Colors.white, fontSize: 9),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -569,7 +541,6 @@ class _HomeApprenantState extends State<HomeApprenant> {
         onTap: (index) {
           setState(() {
             _currentIndex = index;
-
             if (index == 0) {
               _countUnreadReplies();
             }

@@ -1,3 +1,5 @@
+// lib/screens/supabase_video_player.dart
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -12,8 +14,6 @@ class SupabaseVideoPlayer extends StatefulWidget {
     this.onVideoEnded,
   });
 
-
-
   @override
   State<SupabaseVideoPlayer> createState() => _SupabaseVideoPlayerState();
 }
@@ -21,6 +21,7 @@ class SupabaseVideoPlayer extends StatefulWidget {
 class _SupabaseVideoPlayerState extends State<SupabaseVideoPlayer> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
+  bool _isEnded = false;
 
   @override
   void initState() {
@@ -30,27 +31,28 @@ class _SupabaseVideoPlayerState extends State<SupabaseVideoPlayer> {
 
   Future<void> _initializePlayer() async {
     _videoController = VideoPlayerController.network(widget.videoUrl);
-
     await _videoController!.initialize();
 
     _videoController!.addListener(() {
-      final isEnded = _videoController!.value.position >= _videoController!.value.duration;
-
-      if (isEnded && widget.onVideoEnded != null) {
-        widget.onVideoEnded!();
+      if (_videoController == null) return;
+      final position = _videoController!.value.position;
+      final duration = _videoController!.value.duration;
+      if (position >= duration && !_isEnded) {
+        setState(() {
+          _isEnded = true;
+        });
       }
     });
-
 
     _chewieController = ChewieController(
       videoPlayerController: _videoController!,
       autoPlay: false,
       looping: false,
       materialProgressColors: ChewieProgressColors(
-        playedColor: const Color(0xFF30B0C7),
-        handleColor: const Color(0xFF30B0C7),
-        backgroundColor: Colors.grey,
-        bufferedColor: Colors.lightBlue.shade100,
+        playedColor: Colors.grey.shade200,
+        handleColor: Colors.grey.shade400,
+        backgroundColor: Colors.white,
+        bufferedColor: Colors.grey.shade300,
       ),
     );
 
@@ -66,10 +68,50 @@ class _SupabaseVideoPlayerState extends State<SupabaseVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    if (_chewieController != null && _chewieController!.videoPlayerController.value.isInitialized) {
-      return AspectRatio(
-        aspectRatio: _videoController!.value.aspectRatio,
-        child: Chewie(controller: _chewieController!),
+    if (_chewieController != null &&
+        _chewieController!.videoPlayerController.value.isInitialized) {
+      return Column(
+        children: [
+          // 1) La vidéo
+          AspectRatio(
+            aspectRatio: _videoController!.value.aspectRatio,
+            child: Chewie(controller: _chewieController!),
+          ),
+
+          // 2) Lien stylisé “Passer le QCM”
+          if (_isEnded && widget.onVideoEnded != null) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.shade700,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () => widget.onVideoEnded!(),
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    child: Text(
+                      'Passer le QCM',
+                      style: TextStyle(
+                        color: Color(0xA9FFCA00),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       );
     } else {
       return const Center(child: CircularProgressIndicator());
