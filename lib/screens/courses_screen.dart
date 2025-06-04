@@ -22,17 +22,17 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   final List<Map<String, String>> _carouselItems = [
     {
-      'image': 'assets/screens/startscreen.png',
+      'image': 'assets/images/startscreen.png',
       'title': 'welcome screen',
       'subtitle': 'Commencer avec nous votre appretissage',
     },
     {
-      'image': 'assets/screens/signin.png',
-      'title': 'Créer un comote',
+      'image': 'assets/images/signin.png',
+      'title': 'Créer un compte',
       'subtitle': 'Devenue un memebre de notre communité',
     },
     {
-      'image': 'assets/screens/profile.png',
+      'image': 'assets/images/profile.png',
       'title': 'Mon profil',
       'subtitle': 'Suivez vos certifications et statistiques',
     },
