@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +33,9 @@ class _HomeApprenantState extends State<HomeApprenant> {
   int totalScore = 0;
   int unreadReplies = 0;
 
+  StreamSubscription? _scoreSubscription;
+
+
 
   String _sortCriteria = 'title'; // title | rating
 
@@ -38,8 +43,8 @@ class _HomeApprenantState extends State<HomeApprenant> {
   void initState() {
     super.initState();
     _fetchUserProfilePhoto();
-    _fetchTotalScore();
     _countUnreadReplies();
+    _listenToTotalScore();
   }
 
 
@@ -65,27 +70,30 @@ class _HomeApprenantState extends State<HomeApprenant> {
 
 
 
-  Future<void> _fetchTotalScore() async {
+  void _listenToTotalScore() {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('userScores')
-          .where('userId', isEqualTo: userId)
-          .get();
-
+    _scoreSubscription = FirebaseFirestore.instance
+        .collection('userScores')
+        .doc(userId)
+        .collection('scores')
+        .snapshots()
+        .listen((snapshot) {
       int score = 0;
       for (var doc in snapshot.docs) {
         score += (doc['score'] ?? 0) as int;
       }
-
       setState(() {
         totalScore = score;
       });
-    } catch (e) {
-      print("⚠️ Firestore error in _fetchTotalScore: $e");
-    }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scoreSubscription?.cancel();
+    super.dispose();
   }
 
 

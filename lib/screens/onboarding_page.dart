@@ -15,7 +15,8 @@ class OnboardingPage extends StatelessWidget {
         children: [
           // Partie vidéo (inchangée)
           SizedBox(
-            height: 200,
+            height: 280,
+            width: 580,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),

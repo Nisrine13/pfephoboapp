@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../pages/course_details_page.dart';
 import '../services/supabase_service.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -412,6 +413,58 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Mes cours enregistrés',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(user!.uid)
+                    .collection('savedCourses')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+
+                  final courses = snapshot.data!.docs;
+
+                  if (courses.isEmpty) {
+                    return Text("Aucun cours enregistré", style: TextStyle(color: darkGray));
+                  }
+
+                  return ListView.builder(
+                    itemCount: courses.length,
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        color: Colors.white,
+                        child: ListTile(
+                          title: Text(course['title'] ?? 'Cours', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                          trailing: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CourseDetailsPage(courseId: course['courseId']),
+                                ),
+                              );
+                            },
+                            child: const Text('Voir le cours'),
+                            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: white),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],

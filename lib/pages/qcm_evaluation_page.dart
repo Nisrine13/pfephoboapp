@@ -45,21 +45,31 @@ class _QcmEvaluationPageState extends State<QcmEvaluationPage> {
     });
   }
 
-  Future<void> addUserScoreToGlobalCollection(int score) async {
+  Future<void> addUserScoreToGlobalCollection(int score, String courseId, String chapterId) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
+    final scoreId = "${courseId}_$chapterId";
+
     try {
-      await FirebaseFirestore.instance.collection('userScores').add({
-        'userId': userId,
+      await FirebaseFirestore.instance
+          .collection('userScores')
+          .doc(userId)
+          .collection('scores')
+          .doc(scoreId)
+          .set({
         'score': score,
+        'courseId': courseId,
+        'chapterId': chapterId,
         'timestamp': FieldValue.serverTimestamp(),
       });
-      print("✅ Score global enregistré : $score");
+      print("✅ Score global enregistré ou mis à jour : $score");
     } catch (e) {
       print("❌ Erreur en enregistrant le score global : $e");
     }
   }
+
+
 
 
   void evaluate() {
@@ -84,7 +94,7 @@ class _QcmEvaluationPageState extends State<QcmEvaluationPage> {
         .set({'score': score, 'total': questions.length});
 
     // ✅ Enregistrement global dans userScores
-    addUserScoreToGlobalCollection(score);
+    addUserScoreToGlobalCollection(score, widget.courseId, widget.chapterId);
   }
 
   String getFeedbackEmoji() {

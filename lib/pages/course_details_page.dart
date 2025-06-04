@@ -8,6 +8,7 @@ import '../screens/supabase_video_player.dart';
 class CourseDetailsPage extends StatefulWidget {
   final String courseId;
 
+
   const CourseDetailsPage({super.key, required this.courseId});
 
   @override
@@ -28,17 +29,38 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
   int selectedChapterIndex = 0;
   List<DocumentSnapshot> chapters = [];
 
+
+
   @override
   void initState() {
     super.initState();
     fetchChapters();
+    checkIfSaved();
   }
+
 
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
+
+  Future<void> checkIfSaved() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user.uid)
+        .collection('savedCourses')
+        .doc(widget.courseId)
+        .get();
+
+    setState(() {
+      isSaved = doc.exists;
+    });
+  }
+
 
   void _markRepliesAsRead(String chapterId) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -59,6 +81,65 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       await doc.reference.update({'isReplyRead': true});
     }
   }
+
+
+  bool isSaved = false;
+  bool isLoading = false;
+
+  Future<void> _toggleSaveCourse() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || isLoading) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .collection('savedCourses')
+          .doc(widget.courseId);
+
+      final doc = await docRef.get();
+
+      if (doc.exists) {
+        await docRef.delete();
+        setState(() {
+          isSaved = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Cours retiré de vos favoris."),
+          backgroundColor: Colors.grey,
+        ));
+      } else {
+        final courseDoc = await FirebaseFirestore.instance
+            .collection('courses')
+            .doc(widget.courseId)
+            .get();
+
+        await docRef.set({
+          'courseId': widget.courseId,
+          'title': courseDoc['title'] ?? '',
+          'timestamp': Timestamp.now(),
+        });
+        setState(() {
+          isSaved = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Cours enregistré dans votre profil."),
+          backgroundColor: primaryColor,
+        ));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Erreur lors de la sauvegarde : $e"),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+
 
 
 
@@ -97,39 +178,60 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
           Container(
             width: 100,
             color: lightGray,
-            child: ListView.builder(
-              itemCount: chapters.length,
-              itemBuilder: (context, index) {
-                final isSelected = index == selectedChapterIndex;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedChapterIndex = index;
-                    });
-                    _markRepliesAsRead(chapters[index].id);
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: isSelected ? primaryColor : white,
-                          foregroundColor: isSelected ? white : primaryColor,
-                          child: Text('${index + 1}'),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Chap ${index + 1}',
-                          style: TextStyle(
-                            color: isSelected ? primaryColor : darkGray,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: chapters.length,
+                    itemBuilder: (context, index) {
+                      final isSelected = index == selectedChapterIndex;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedChapterIndex = index;
+                          });
+                          _markRepliesAsRead(chapters[index].id);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: isSelected ? primaryColor : white,
+                                foregroundColor: isSelected ? white : primaryColor,
+                                child: Text('${index + 1}'),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Chap ${index + 1}',
+                                style: TextStyle(
+                                  color: isSelected ? primaryColor : darkGray,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _toggleSaveCourse,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: Size(48, 36), // tu peux ajuster la taille
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+                  ),
+                )
+              ],
             ),
           ),
 
@@ -159,6 +261,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                     ),
                     const SizedBox(height: 20),
                     SupabaseVideoPlayer(
+                      key: ValueKey(data?['videoUrl']),
                       videoUrl: data['videoUrl'] ?? '',
                       onVideoEnded: () async {
                         final chapterId = chapter?.id;

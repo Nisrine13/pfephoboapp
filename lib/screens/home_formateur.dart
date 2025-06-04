@@ -700,59 +700,76 @@ class _HomeFormateurState extends State<HomeFormateur> {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Modifier le chapitre'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(controller: titleController, decoration: InputDecoration(labelText: 'Titre')),
-              TextField(controller: summaryController, decoration: InputDecoration(labelText: 'Résumé')),
-              if (videoUrl.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.video_library, color: primaryColor),
-                      SizedBox(width: 8),
-                      Expanded(child: Text("Vidéo actuelle ajoutée", style: TextStyle(fontSize: 13))),
-                    ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Modifier le chapitre'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(controller: titleController, decoration: InputDecoration(labelText: 'Titre')),
+                TextField(controller: summaryController, decoration: InputDecoration(labelText: 'Résumé')),
+                if (videoUrl.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10.0),
+                    child: Row(
+                      children: [
+                        Icon(Icons.video_library, color: primaryColor),
+                        SizedBox(width: 8),
+                        Expanded(child: Text("Vidéo actuelle ajoutée", style: TextStyle(fontSize: 13))),
+                      ],
+                    ),
                   ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['mp4', 'mov', 'webm'],
+                      withData: true, // ✅ assure que file.bytes est disponible
+                    );
+                    if (result != null && result.files.single.bytes != null) {
+                      final file = result.files.single;
+                      final url = await SupabaseService().uploadFile(file, 'videos/${file.name}', 'videos');
+
+                      setState(() {
+                        videoUrl = url; // ✅ bien mettre à jour la variable locale
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("✅ Vidéo téléversée avec succès."), backgroundColor: primaryColor),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.upload_file),
+                  label: Text("Changer la vidéo"),
                 ),
-              TextButton.icon(
-                onPressed: () async {
-                  final result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['mp4', 'mov', 'webm'],
-                  );
-                  if (result != null && result.files.single.bytes != null) {
-                    final file = result.files.single;
-                    final url = await SupabaseService().uploadFile(file, 'videos/${file.name}', 'videos');
-                    videoUrl = url;
-                  }
-                },
-                icon: Icon(Icons.upload_file),
-                label: Text("Changer la vidéo"),
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
+            ElevatedButton(
+              onPressed: () async {
+                await _firestore
+                    .collection('courses')
+                    .doc(courseId)
+                    .collection('chapters')
+                    .doc(chapter.id)
+                    .update({
+                  'title': titleController.text,
+                  'summary': summaryController.text,
+                  'videoUrl': videoUrl, // ✅ upload réel ici
+                });
+
+                Navigator.pop(context);
+              },
+              child: Text('Enregistrer'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
-          ElevatedButton(
-            onPressed: () async {
-              await _firestore.collection('courses').doc(courseId).collection('chapters').doc(chapter.id).update({
-                'title': titleController.text,
-                'summary': summaryController.text,
-                'videoUrl': videoUrl,
-              });
-              Navigator.pop(context);
-            },
-            child: Text('Enregistrer'),
-          ),
-        ],
       ),
     );
   }
+
 
   Future<void> _deleteChapter(String courseId, String chapterId) async {
     try {
