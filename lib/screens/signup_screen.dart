@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'home_apprenant.dart';
-import 'home_formateur.dart';
+import 'package:pfephoboapp/screens/home_apprenant.dart';
+import 'package:pfephoboapp/screens/home_formateur.dart';
+import 'package:pfephoboapp/screens/background_video.dart';
+
+import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -28,18 +31,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     _verificationTimer?.cancel();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  InputDecoration buildInputDecoration({required String hint, required IconData icon}) {
+  InputDecoration buildInputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon, color: const Color(0xFF30B0C7)),
+      hintStyle: const TextStyle(color: Colors.white70),
+      prefixIcon: Icon(icon, color: const Color(0xFFD2B48C)), // Marron clair
       filled: true,
-      fillColor: const Color(0xFFF0F4F5),
+      fillColor: Colors.white.withOpacity(0.15), // Blanc transparent
       floatingLabelBehavior: FloatingLabelBehavior.never,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
     );
@@ -50,19 +63,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (user != null && !user.emailVerified) {
       await user.reload();
       user = FirebaseAuth.instance.currentUser;
-
-      if (user!.emailVerified) {
+      if (user != null && user.emailVerified) {
         _verificationTimer?.cancel();
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => selectedRole == 'Formateur'
-                  ? HomeFormateur()
-                  : const HomeApprenant(),
-            ),
-                (route) => false,
-          );
-        }
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => selectedRole == 'Formateur'
+                ? const HomeFormateur()
+                : const HomeApprenant(),
+          ),
+              (route) => false,
+        );
       }
     }
   }
@@ -74,22 +85,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // Démarrer la vérification périodique
       _verificationTimer = Timer.periodic(
-          const Duration(seconds: 5),
-              (timer) => _checkEmailVerification()
+        const Duration(seconds: 5),
+            (_) => _checkEmailVerification(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email de vérification envoyé')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email de vérification envoyé')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de l\'envoi du lien: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Échec envoi email: ${e.toString()}')),
+        );
+      }
     }
   }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez accepter les termes et conditions')),
@@ -113,10 +129,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // Créer le compte
       UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       // Enregistrer dans Firestore
       await FirebaseFirestore.instance
@@ -132,7 +145,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // Envoyer l'email de vérification
       await _sendVerificationEmail(userCredential.user!);
-
     } on FirebaseAuthException catch (e) {
       String errorMessage;
       switch (e.code) {
@@ -151,141 +163,330 @@ class _SignUpScreenState extends State<SignUpScreen> {
         default:
           errorMessage = "Erreur: ${e.message}";
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur inattendue: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur inattendue: ${e.toString()}")),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Image.asset('assets/images/status_icons.png', height: 70, width: 60),
-                    const SizedBox(height: 12),
-                    const Text('CRÉER UN COMPTE', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF30B0C7))),
-                    const SizedBox(height: 24),
-                    DropdownButtonFormField<String>(
-                      value: selectedRole,
-                      decoration: buildInputDecoration(hint: 'Sélectionnez votre rôle', icon: Icons.person_pin),
-                      items: ['Apprenant', 'Formateur'].map((value) =>
-                          DropdownMenuItem<String>(value: value, child: Text(value))
-                      ).toList(),
-                      onChanged: (newValue) => setState(() => selectedRole = newValue),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _firstNameController,
-                            decoration: buildInputDecoration(hint: 'Prénom', icon: Icons.person),
-                            validator: (value) => value!.isEmpty ? 'Champ requis' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _lastNameController,
-                            decoration: buildInputDecoration(hint: 'Nom', icon: Icons.person_outline),
-                            validator: (value) => value!.isEmpty ? 'Champ requis' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: buildInputDecoration(hint: 'Email', icon: Icons.email),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) =>
-                      !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value ?? '')
-                          ? 'Email invalide'
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: buildInputDecoration(hint: 'Mot de passe', icon: Icons.lock),
-                      validator: (value) => value!.length < 6 ? 'Minimum 6 caractères' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      decoration: buildInputDecoration(hint: 'Confirmer mot de passe', icon: Icons.lock_outline),
-                      validator: (value) => value != _passwordController.text ? 'Les mots de passe ne correspondent pas' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _agreeToTerms,
-                          onChanged: (val) => setState(() => _agreeToTerms = val ?? false),
-                        ),
-                        const Expanded(child: Text("J'accepte les termes et conditions")),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    if (_emailSent) ...[
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          'Vérifiez votre email pour le lien de confirmation',
-                          style: TextStyle(color: Colors.green),
+      // On retire le backgroundColor pour laisser la vidéo occuper tout l'espace
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1) Vidéo en arrière-plan (full screen)
+          const BackgroundVideo(),
+
+          // 2) Voile sombre semi-transparent (pour faire ressortir le formulaire)
+          Container(
+            color: Colors.black.withOpacity(0.5),
+          ),
+
+          // 3) Contenu du formulaire superposé
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: ConstrainedBox(
+                  // On limite la largeur max pour que le formulaire ne soit pas trop étiré
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo (vous pouvez remplacer par votre asset réel)
+                      Center(
+                        child: Image.asset(
+                          'assets/images/onboarding_image.png',
+                          height: 120,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: _checkEmailVerification,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          minimumSize: const Size(double.infinity, 50),
-                        ),
-                        child: const Text(
-                          "J'ai vérifié mon email",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                      const SizedBox(height: 24),
+
+                      // Titre
+                      const Text(
+                        'CRÉER UN COMPTE',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
+
+                      // Le Container noir qui contient le formulaire, avec bord arrondi
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.all(16.0),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Sélecteur de rôle
+                              DropdownButtonFormField<String>(
+                                value: selectedRole,
+                                dropdownColor: Colors.black.withOpacity(0.8),
+                                decoration: buildInputDecoration(
+                                  hint: 'Sélectionnez votre rôle',
+                                  icon: Icons.person_pin,
+                                ),
+                                style: const TextStyle(color: Colors.white),
+                                items: ['Apprenant', 'Formateur']
+                                    .map(
+                                      (value) => DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(
+                                      value,
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                )
+                                    .toList(),
+                                onChanged: (newValue) =>
+                                    setState(() => selectedRole = newValue),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Prénom / Nom
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _firstNameController,
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: buildInputDecoration(
+                                        hint: 'Prénom',
+                                        icon: Icons.person,
+                                      ),
+                                      validator: (value) =>
+                                      (value == null || value.isEmpty)
+                                          ? 'Champ requis'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _lastNameController,
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: buildInputDecoration(
+                                        hint: 'Nom',
+                                        icon: Icons.person_outline,
+                                      ),
+                                      validator: (value) =>
+                                      (value == null || value.isEmpty)
+                                          ? 'Champ requis'
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Email
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: buildInputDecoration(
+                                  hint: 'Email',
+                                  icon: Icons.email,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Champ requis';
+                                  }
+                                  final emailRegex =
+                                  RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                  return !emailRegex.hasMatch(value.trim())
+                                      ? 'Email invalide'
+                                      : null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Mot de passe
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: buildInputDecoration(
+                                  hint: 'Mot de passe',
+                                  icon: Icons.lock,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Champ requis';
+                                  }
+                                  return value.length < 6
+                                      ? 'Minimum 6 caractères'
+                                      : null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Confirmer le mot de passe
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: true,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: buildInputDecoration(
+                                  hint: 'Confirmer mot de passe',
+                                  icon: Icons.lock_outline,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Champ requis';
+                                  }
+                                  return value != _passwordController.text
+                                      ? 'Les mots de passe ne correspondent pas'
+                                      : null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Checkbox pour accepter les termes
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _agreeToTerms,
+                                    checkColor: Colors.brown.shade800,
+                                    fillColor:
+                                    MaterialStateProperty.resolveWith<Color>(
+                                          (states) {
+                                        return Colors.white;
+                                      },
+                                    ),
+                                    onChanged: (val) =>
+                                        setState(() => _agreeToTerms = val ?? false),
+                                  ),
+                                  const Expanded(
+                                    child: Text(
+                                      "J'accepte les termes et conditions",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Section “Email vérifié” si besoin
+                              if (_emailSent) ...[
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 16),
+                                  child: Text(
+                                    'Vérifiez votre email pour le lien de confirmation',
+                                    style: TextStyle(color: Colors.greenAccent),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: _checkEmailVerification,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    minimumSize: const Size(double.infinity, 48),
+                                  ),
+                                  child: const Text(
+                                    "J'ai vérifié mon email",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // Bouton d'inscription
+                              ElevatedButton(
+                                onPressed: _isLoading ? null : _register,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD2B48C), // Marron clair
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  minimumSize: const Size(double.infinity, 48),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                    : const Text(
+                                  "S'inscrire",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      // Lien pour retourner à la page de Login si on a déjà un compte
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Vous avez déjà un compte ? ",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            ),
+                            child: Text(
+                              'Se connecter',
+                              style: TextStyle(
+                                color: const Color(0xFFD2B48C), // Marron clair
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
                     ],
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _register,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF30B0C7),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("S'inscrire", style: TextStyle(color: Colors.white, fontSize: 16)),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
