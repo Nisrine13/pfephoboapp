@@ -1,5 +1,3 @@
-// lib/screens/HomeApprenant.dart
-
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +6,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../pages/course_details_page.dart';
 import '../pages/notifications_page.dart';
 import 'profile_page.dart';
+import 'mescours_page.dart';
 
 class HomeApprenant extends StatefulWidget {
   const HomeApprenant({Key? key}) : super(key: key);
@@ -17,28 +16,24 @@ class HomeApprenant extends StatefulWidget {
 }
 
 class _HomeApprenantState extends State<HomeApprenant> {
-  // Palette marron / beige / blanc
+
   final Color _beigeWhite = const Color(0xFFF5F1E8);
   final Color _darkBrown = const Color(0xFF805D3B);
   final Color _primaryBrown = const Color(0xFFECBF25);
   final Color _white = Colors.white;
   final Color _white70 = const Color(0xA9FFFFFF);
 
-  // Photo utilisateur
   String? userPhotoUrl;
   final String defaultPhotoPath = 'assets/images/defaultprofil.jpg';
 
-  // Recherche + tri
   String searchQuery = '';
   String _sortCriteria = 'title'; // "title" ou "rating"
 
-  // Score et notifications non lues
   int totalScore = 0;
   int unreadReplies = 0;
   StreamSubscription? _scoreSubscription;
 
-  // Index de l’onglet actif (0=Notifications, 1=Accueil, 2=Profil)
-  int _currentIndex = 1; // Par défaut sur "Accueil"
+  int _currentIndex = 1;
 
   @override
   void initState() {
@@ -493,6 +488,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
           _buildNotificationsTab(),
           SafeArea(child: _buildHomeTab()),
           _buildProfileTab(),
+          const MesCoursPage(),
         ],
       ),
 
@@ -532,6 +528,10 @@ class _HomeApprenantState extends State<HomeApprenant> {
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Accueil',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'Mes cours',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.person),
