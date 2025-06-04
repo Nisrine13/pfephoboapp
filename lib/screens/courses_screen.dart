@@ -22,12 +22,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   final List<Map<String, String>> _carouselItems = [
     {
-      'image': 'assets/images/startscreen.png',
+      'image': 'assets/images/startscreen.jpg',
       'title': 'welcome screen',
       'subtitle': 'Commencer avec nous votre appretissage',
     },
     {
-      'image': 'assets/images/signin.png',
+      'image': 'assets/images/signin.jpg',
       'title': 'Créer un compte',
       'subtitle': 'Devenue un memebre de notre communité',
     },
@@ -91,19 +91,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   final List<Map<String, String>> _testimonials = [
     {
-      'avatar': 'assets/avatars/user1.png',
-      'quote': 'Phobo m’a aidé à valider mes certifications en un mois !',
-      'name': 'Laura, Étudiante',
+      'quote': 'Ce site est excellent !',
+      'name': 'Mohammad',
     },
     {
-      'avatar': 'assets/avatars/user2.png',
-      'quote': 'Interface intuitive et contenus de qualité.',
-      'name': 'Marc, Développeur',
+      'quote': 'J’apprends beaucoup de choses.',
+      'name': 'Omar',
     },
     {
-      'avatar': 'assets/avatars/user3.png',
-      'quote': 'J’adore la section forum pour poser mes questions.',
-      'name': 'Sophie, Professeur',
+      'quote': 'Merci pour tout le contenu partagé.',
+      'name': 'Malak',
     },
   ];
 
@@ -168,23 +165,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // « AppBar » textuel minimal
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                  child: Text(
-                    'Phobo',
-                    style: TextStyle(
-                      color: _white,
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 24,
-                    ),
-                  ),
-                ),
 
                 // 1) Carrousel automatique
                 SizedBox(
-                  height: 300,
+                  height: 810,
                   child: PageView.builder(
                     controller: _carouselController,
                     itemCount: _carouselItems.length,
@@ -319,72 +303,6 @@ class _CoursesScreenState extends State<CoursesScreen> {
                 // 3) Section Cours à la une
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Text(
-                    'Cours à la une',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: _white,
-                      fontFamily: 'Montserrat',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 180,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    itemCount: _featuredCourses.length,
-                    itemBuilder: (context, index) {
-                      final course = _featuredCourses[index];
-                      return Container(
-                        width: 140,
-                        margin: EdgeInsets.only(
-                            right: index == _featuredCourses.length - 1 ? 0 : 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                course['coverImage'],
-                                height: 100,
-                                width: 140,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              course['title'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: _white,
-                                fontFamily: 'Montserrat',
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.star, size: 14, color: _primaryBrown),
-                                Text(
-                                  ' ${course['rating']}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: _white70,
-                                    fontFamily: 'Montserrat',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -413,7 +331,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       return Container(
                         width: 240,
                         margin: EdgeInsets.only(
-                            right: index == _testimonials.length - 1 ? 0 : 16),
+                          right: index == _testimonials.length - 1 ? 0 : 16,
+                        ),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
@@ -422,9 +341,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // Cercle avec icône personne
                             CircleAvatar(
                               radius: 24,
-                              backgroundImage: AssetImage(t['avatar']!),
+                              backgroundColor: Colors.white24,
+                              child: Icon(
+                                Icons.person,
+                                size: 28,
+                                color: _primaryBrown,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -496,22 +421,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.language, size: 20, color: Colors.white70),
-                          const SizedBox(width: 8),
-                          Text(
-                            'www.phobo.education',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: _white70,
-                              fontFamily: 'Montserrat',
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 24),
+
                     ],
                   ),
                 ),
