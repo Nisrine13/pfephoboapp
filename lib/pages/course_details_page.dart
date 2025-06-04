@@ -29,7 +29,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
 
   int selectedChapterIndex = 0;
   List<DocumentSnapshot> chapters = [];
-
   bool isSaved = false;
   bool isLoading = false;
 
@@ -82,10 +81,12 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
         setState(() {
           isSaved = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Cours retiré de vos favoris."),
-          backgroundColor: Colors.grey,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Cours retiré de vos favoris."),
+            backgroundColor: Colors.grey,
+          ),
+        );
       } else {
         final courseDoc = await FirebaseFirestore.instance
             .collection('courses')
@@ -100,16 +101,20 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
         setState(() {
           isSaved = true;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Cours enregistré dans votre profil."),
-          backgroundColor: primaryColor,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Cours enregistré dans votre profil."),
+            backgroundColor: primaryColor,
+          ),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Erreur lors de la sauvegarde : $e"),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erreur lors de la sauvegarde : $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -189,14 +194,15 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
   @override
   Widget build(BuildContext context) {
     if (chapters.isEmpty) {
-
       return Scaffold(
         backgroundColor: white,
         appBar: AppBar(
           backgroundColor: white,
+          automaticallyImplyLeading: false, // pas de flèche retour
+          elevation: 0,
           actions: [
             IconButton(
-              icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+              icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border, color: primaryColor),
               onPressed: _toggleSaveCourse,
             )
           ],
@@ -213,12 +219,14 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final videoWidth = screenWidth - 10;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: white,
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.brown),
+        backgroundColor: white,
+        automaticallyImplyLeading: false, // pas de flèche retour
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+            icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border, color: primaryColor),
             onPressed: _toggleSaveCourse,
           )
         ],
@@ -272,7 +280,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Aucun QCM disponible pour ce chapitre."),
+                          content: const Text("Aucun QCM disponible pour ce chapitre."),
                           backgroundColor: primaryColor,
                         ),
                       );
@@ -283,33 +291,25 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
             ),
             const SizedBox(height: 12),
 
-            // Boutons Précédent / Suivant
+            // Boutons Précédent / Suivant (icônes "YouTube style")
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ElevatedButton(
+                IconButton(
                   onPressed: selectedChapterIndex > 0 ? _goToPreviousChapter : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedChapterIndex > 0
-                        ? primaryColor
-                        : primaryColor.withOpacity(0.5),
-                    foregroundColor: white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  iconSize: 40,
+                  icon: Icon(
+                    Icons.skip_previous,
+                    color: selectedChapterIndex > 0 ? primaryColor : primaryColor.withOpacity(0.5),
                   ),
-                  child: const Text('Précédent'),
                 ),
-                ElevatedButton(
+                IconButton(
                   onPressed: selectedChapterIndex < chapters.length - 1 ? _goToNextChapter : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedChapterIndex < chapters.length - 1
-                        ? primaryColor
-                        : primaryColor.withOpacity(0.5),
-                    foregroundColor: white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  iconSize: 40,
+                  icon: Icon(
+                    Icons.skip_next,
+                    color: selectedChapterIndex < chapters.length - 1 ? primaryColor : primaryColor.withOpacity(0.5),
                   ),
-                  child: const Text('Suivant'),
                 ),
               ],
             ),
@@ -399,7 +399,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                                         title: Text('Modifier le commentaire', style: TextStyle(color: darkGray)),
                                         content: TextField(
                                           controller: editController,
-                                          decoration: InputDecoration(hintText: 'Votre commentaire'),
+                                          decoration: const InputDecoration(hintText: 'Votre commentaire'),
                                         ),
                                         actions: [
                                           TextButton(
@@ -428,8 +428,14 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                                         title: Text('Supprimer', style: TextStyle(color: darkGray)),
                                         content: Text('Voulez-vous supprimer ce commentaire ?'),
                                         actions: [
-                                          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler', style: TextStyle(color: primaryColor))),
-                                          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Supprimer', style: TextStyle(color: primaryColor))),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: Text('Annuler', style: TextStyle(color: primaryColor)),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: Text('Supprimer', style: TextStyle(color: primaryColor)),
+                                          ),
                                         ],
                                       ),
                                     );
@@ -497,10 +503,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               height: 40,
               child: TextField(
                 controller: _commentController,
-                style: TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: "Ajouter un commentaire...",
-                  hintStyle: TextStyle(fontSize: 14),
+                  hintStyle: const TextStyle(fontSize: 14),
                   filled: true,
                   fillColor: lightGray,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -537,8 +543,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
 
                   _commentController.clear();
                 },
-                icon: Icon(Icons.send, size: 16),
-                label: Text("Ajouter", style: TextStyle(fontSize: 14)),
+                icon: const Icon(Icons.send, size: 16),
+                label: const Text("Ajouter", style: TextStyle(fontSize: 14)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: white,
