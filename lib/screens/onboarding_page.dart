@@ -10,92 +10,128 @@ class OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
+      // On retire le backgroundColor blanc pour laisser la vidéo en plein écran
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Partie vidéo (inchangée)
-          SizedBox(
-            height: 280,
-            width: 580,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-              child: const BackgroundVideo(),
-            ),
+          // 1) Vidéo en arrière-plan (full screen)
+          const BackgroundVideo(),
+
+          // 2) Calque semi-transparent si vous souhaitez un léger voile par-dessus la vidéo
+          //   (optionnel — si vous désirez un léger fondu pour mieux faire ressortir les boutons)
+          Container(
+            color: Colors.black.withOpacity(0.3),
           ),
 
-          // Contenu centré verticalement et horizontalement
-          Expanded(
+          // 3) Contenu superposé sur la vidéo (logo + boutons + lien)
+          SafeArea(
             child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo
+                    // --- Logo + titre ---
+                    // Ici je garde votre asset, mais vous pouvez le remplacer par votre logo PNG
                     Image.asset(
                       'assets/images/onboarding_image.png',
-                      height: 180,
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 400),
 
-                    // Boutons et liens (style inchangé)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SignUpScreen()),
-                          ),
-                          child: const Text(
-                            'Create an account',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    // --- Bouton "Créer un compte" ---
+                    // Taille réduite, fond blanc transparent, texte noir
+                    SizedBox(
+                      width: 240,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          // Fond blanc semi-transparent
+                          backgroundColor: Colors.white.withOpacity(0.5),
+                          // Retirer l'ombre par défaut d'ElevatedButton
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 0, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        TextButton(
+                        child: const Text(
+                          'Créer un compte',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // --- Bouton "Se connecter" ---
+                    // Même taille, fond transparent, bordure blanche et texte blanc + ombre
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: SizedBox(
+                        width: 240,
+                        child: OutlinedButton(
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const LoginScreen()),
                           ),
-                          child: const Text(
-                            'Already have an account? LOG IN',
-                            style: TextStyle(
-                              color: Colors.purple,
-                              fontSize: 14,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            side: const BorderSide(
+                              color: Color(0x6EFFFFFF),
+                              width: 2,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CoursesScreen()),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF30B0C7),
-                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 0, vertical: 14),
                           ),
                           child: const Text(
-                            "Let's Get Started",
+                            'Se connecter',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white,
+                              color: Color(0x6EFFFFFF),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 40),
+
+                    // --- Lien "Découvrir l’app sans connexion" ---
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CoursesScreen()),
+                      ),
+                      child: const Text(
+                        'Découvrir l’app sans connexion',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xD2E6BF9F), // brun doux
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
