@@ -335,11 +335,11 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
 
             // 5) Section Commentaires
             Text(
-              "Commentaires",
+              "Commentaires ",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: darkGray,
+                color: accentYellow,
               ),
             ),
             const SizedBox(height: 10),

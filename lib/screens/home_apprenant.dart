@@ -474,7 +474,7 @@ class _HomeApprenantState extends State<HomeApprenant> {
     );
   }
 
-  // --- Onglet Profil (index = 2) ---
+
   Widget _buildProfileTab() {
     return const ProfilePage();
   }
@@ -487,12 +487,13 @@ class _HomeApprenantState extends State<HomeApprenant> {
         children: [
           _buildNotificationsTab(),
           SafeArea(child: _buildHomeTab()),
-          _buildProfileTab(),
           const MesCoursPage(),
+          _buildProfileTab(),
         ],
       ),
 
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         backgroundColor: _darkBrown,
         selectedItemColor: _beigeWhite,

@@ -15,7 +15,7 @@ class MesCoursPage extends StatefulWidget {
 
 class _MesCoursPageState extends State<MesCoursPage> {
   final User? user = FirebaseAuth.instance.currentUser;
-  final Color primaryColor = const Color(0xFF30B0C7);
+  final Color primaryColor = const Color(0xD0805D3B);
   final Color darkGray     = const Color(0xFF757575);
   final Color white        = Colors.white;
   final Color lightGray    = const Color(0xFFEEEEEE);
@@ -29,11 +29,7 @@ class _MesCoursPageState extends State<MesCoursPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mes cours enregistrés", style: TextStyle(color: Colors.white)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: StreamBuilder<QuerySnapshot>(

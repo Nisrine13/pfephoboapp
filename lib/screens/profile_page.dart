@@ -16,8 +16,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   // Palette de couleurs
-  final Color primaryColor   = const Color(0xFF30B0C7);  // bleu principal
-  final Color accentYellow   = const Color(0xFFFFD700);  // jaune accent
+  final Color primaryColor   = const Color(0xD0805D3B);  // bleu principal
+  final Color accentYellow   = const Color(0xB6FFCA00);  // jaune accent
   final Color importantRed   = const Color(0xFFE53935);  // rouge (erreur)
   final Color lightGray      = const Color(0xFFEEEEEE);  // fond légers
   final Color darkGray       = const Color(0xFF757575);  // textes secondaires
@@ -306,16 +306,13 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: lightGray,
-      appBar: AppBar(
-        title: const Text('Mon Profil', style: TextStyle(color: Colors.white)),
-        backgroundColor: primaryColor,
-        iconTheme: IconThemeData(color: white),
-      ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+
+            const SizedBox(height: 20),
             // Avatar + bouton Modifier
             Stack(
               children: [
@@ -423,23 +420,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Bouton pour accéder à “Mes cours”
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MesCoursPage()),
-                );
-              },
-              icon: const Icon(Icons.bookmark, color: Colors.white),
-              label: const Text('Mes cours enregistrés', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              ),
-            ),
           ],
         ),
       ),
