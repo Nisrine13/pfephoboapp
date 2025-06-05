@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
+
+import 'package:pfephoboapp/screens/course_infos_page.dart';
+import 'package:pfephoboapp/screens/chapter_infos_page.dart';
 import 'package:pfephoboapp/screens/profile_page.dart';
 
 import '../pages/comments.dart';
@@ -25,12 +28,12 @@ class _HomeFormateurState extends State<HomeFormateur> {
   double averageRating = 0.0;
 
   // Palette brun / beige / blanc transparent
-  final Color _beigeWhite   = const Color(0xFFF5F1E8);
-  final Color _darkBrown    = const Color(0xFF805D3B);
+  final Color _beigeWhite = const Color(0xFFF5F1E8);
+  final Color _darkBrown = const Color(0xFF805D3B);
   final Color _primaryBrown = const Color(0xFFECBF25);
-  final Color _white        = Colors.white;
-  final Color _white70      = const Color(0xA9FFFFFF);
-  final Color _lightGray    = const Color(0xFFEFE8E0); // très clair, nuance beige
+  final Color _white = Colors.white;
+  final Color _white70 = const Color(0xA9FFFFFF);
+  final Color _lightGray = const Color(0xFFEFE8E0); // très clair, nuance beige
   final Color _redImportant = const Color(0xFFE53935);
 
   int _currentIndex = 1; // 0 = Commentaires, 1 = Accueil, 2 = Profil
@@ -78,7 +81,7 @@ class _HomeFormateurState extends State<HomeFormateur> {
       backgroundColor: _beigeWhite,
       body: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 30),
           // Carte moyenne des évaluations
           Container(
             padding: const EdgeInsets.all(12),
@@ -137,9 +140,16 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Vignette image du cours (clic ouvre chapitres)
+                        // Vignette : ouvre la page des chapitres
                         GestureDetector(
-                          onTap: () => _showChapters(course),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChapterInfosPage(courseId: course.id),
+                              ),
+                            );
+                          },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: (data['imageUrl'] as String?)?.isNotEmpty == true
@@ -200,7 +210,14 @@ class _HomeFormateurState extends State<HomeFormateur> {
                           children: [
                             IconButton(
                               icon: Icon(Icons.edit, color: _darkBrown),
-                              onPressed: () => _editCourse(course),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CourseInfosPage(courseId: course.id),
+                                  ),
+                                );
+                              },
                             ),
                             IconButton(
                               icon: Icon(Icons.delete, color: _redImportant),
@@ -225,19 +242,18 @@ class _HomeFormateurState extends State<HomeFormateur> {
     );
   }
 
-  // ========== Méthodes auxiliaires pour la gestion des cours ==========
-
+  // ========== Méthode d’ajout de cours (reste en dialog) ==========
   Future<void> addCourse() async {
-    final titleController         = TextEditingController();
-    final descriptionController   = TextEditingController();
-    final categoryController      = TextEditingController();
-    final levelController         = TextEditingController();
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final categoryController = TextEditingController();
+    final levelController = TextEditingController();
     final chaptersCountController = TextEditingController();
-    final imageUrlController      = TextEditingController();
+    final imageUrlController = TextEditingController();
 
-    List<TextEditingController> chapterTitles    = [];
+    List<TextEditingController> chapterTitles = [];
     List<TextEditingController> chapterSummaries = [];
-    List<TextEditingController> chapterVideos    = [];
+    List<TextEditingController> chapterVideos = [];
     int chapterCount = 0;
 
     await showDialog(
@@ -305,15 +321,14 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     if (count > 0 && count != chapterCount) {
                       setState(() {
                         chapterCount = count;
-                        chapterTitles    = List.generate(count, (i) => TextEditingController());
+                        chapterTitles = List.generate(count, (i) => TextEditingController());
                         chapterSummaries = List.generate(count, (i) => TextEditingController());
-                        chapterVideos    = List.generate(count, (i) => TextEditingController());
+                        chapterVideos = List.generate(count, (i) => TextEditingController());
                       });
                     }
                   },
                 ),
                 const SizedBox(height: 10),
-
                 // Aperçu de l’image si URL renseignée
                 if (imageUrlController.text.isNotEmpty)
                   Column(
@@ -331,12 +346,11 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     ],
                   ),
                 const SizedBox(height: 8),
-
                 // Bouton pour sélectionner une image
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final result = await FilePicker.platform
-                        .pickFiles(withData: true, type: FileType.image);
+                    final result = await FilePicker.platform.pickFiles(
+                        withData: true, type: FileType.image);
                     if (result != null && result.files.single.bytes != null) {
                       final file = result.files.single;
                       final url = await SupabaseService()
@@ -353,11 +367,11 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     }
                   },
                   icon: const Icon(Icons.image, color: Colors.white),
-                  label: const Text("Choisir une image", style: TextStyle(color: Colors.white)),
+                  label: const Text("Choisir une image",
+                      style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: _darkBrown),
                 ),
                 const SizedBox(height: 10),
-
                 // Pour chaque chapitre, afficher titre / résumé / bouton vidéo
                 for (int i = 0; i < chapterTitles.length; i++)
                   Column(
@@ -397,7 +411,8 @@ class _HomeFormateurState extends State<HomeFormateur> {
                               type: FileType.custom,
                               allowedExtensions: ['mp4', 'mov', 'webm'],
                             );
-                            if (result != null && result.files.single.path != null) {
+                            if (result != null &&
+                                result.files.single.path != null) {
                               final platformFile = result.files.single;
                               final extension = platformFile.name.split('.').last.toLowerCase();
                               if (!['mp4', 'mov', 'webm'].contains(extension)) {
@@ -409,8 +424,8 @@ class _HomeFormateurState extends State<HomeFormateur> {
                                 );
                                 return;
                               }
-                              final url = await SupabaseService()
-                                  .uploadFile(platformFile, 'videos/${platformFile.name}', 'videos');
+                              final url = await SupabaseService().uploadFile(
+                                  platformFile, 'videos/${platformFile.name}', 'videos');
                               if (!mounted) return;
                               setState(() {
                                 chapterVideos[i].text = url;
@@ -424,7 +439,8 @@ class _HomeFormateurState extends State<HomeFormateur> {
                             }
                           },
                           icon: const Icon(Icons.video_library, color: Colors.white),
-                          label: const Text("Choisir une vidéo", style: TextStyle(color: Colors.white)),
+                          label: const Text("Choisir une vidéo",
+                              style: TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(backgroundColor: _darkBrown),
                         ),
                       ),
@@ -461,7 +477,7 @@ class _HomeFormateurState extends State<HomeFormateur> {
 
                 final userDoc = await _firestore.collection('Users').doc(userId).get();
                 final firstName = userDoc.data()?['prenom'] ?? 'Inconnu';
-                final lastName  = userDoc.data()?['nom'] ?? 'Inconnu';
+                final lastName = userDoc.data()?['nom'] ?? 'Inconnu';
                 final authorName = "$firstName $lastName";
 
                 final int? chaptersCount = int.tryParse(chaptersCountController.text);
@@ -484,9 +500,9 @@ class _HomeFormateurState extends State<HomeFormateur> {
                   return;
                 }
                 for (int i = 0; i < chaptersCount; i++) {
-                  if (chapterTitles[i].text.isEmpty
-                      || chapterSummaries[i].text.isEmpty
-                      || chapterVideos[i].text.isEmpty) {
+                  if (chapterTitles[i].text.isEmpty ||
+                      chapterSummaries[i].text.isEmpty ||
+                      chapterVideos[i].text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text("Tous les champs de chapitre doivent être remplis"),
@@ -500,26 +516,26 @@ class _HomeFormateurState extends State<HomeFormateur> {
                 try {
                   // Créer le document du cours
                   final docRef = await _firestore.collection('courses').add({
-                    'title'         : titleController.text,
-                    'description'   : descriptionController.text,
-                    'category'      : categoryController.text,
-                    'level'         : levelController.text,
-                    'chapterCount'  : chaptersCount,
-                    'imageUrl'      : imageUrlController.text,
-                    'author'        : authorName,
-                    'authorId'      : userId,
-                    'createdAt'     : DateTime.now(),
-                    'averageRating' : 0.0,
-                    'ratingCount'   : 0,
+                    'title': titleController.text,
+                    'description': descriptionController.text,
+                    'category': categoryController.text,
+                    'level': levelController.text,
+                    'chapterCount': chaptersCount,
+                    'imageUrl': imageUrlController.text,
+                    'author': authorName,
+                    'authorId': userId,
+                    'createdAt': DateTime.now(),
+                    'averageRating': 0.0,
+                    'ratingCount': 0,
                   });
                   // Créer chaque chapitre
                   for (int i = 0; i < chaptersCount; i++) {
                     await docRef.collection('chapters').add({
-                      'title'     : chapterTitles[i].text,
-                      'summary'   : chapterSummaries[i].text,
-                      'videoUrl'  : chapterVideos[i].text,
-                      'index'     : i,
-                      'courseId'  : docRef.id,
+                      'title': chapterTitles[i].text,
+                      'summary': chapterSummaries[i].text,
+                      'videoUrl': chapterVideos[i].text,
+                      'index': i,
+                      'courseId': docRef.id,
                     });
                   }
                   Navigator.pop(context);
@@ -534,407 +550,6 @@ class _HomeFormateurState extends State<HomeFormateur> {
                 }
               },
               child: const Text('Ajouter'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _editCourse(DocumentSnapshot course) async {
-    final titleController       = TextEditingController(text: (course.data() as Map)['title']);
-    final descriptionController = TextEditingController(text: (course.data() as Map)['description']);
-    final categoryController    = TextEditingController(text: (course.data() as Map)['category']);
-    final levelController       = TextEditingController(text: (course.data() as Map)['level']);
-    String imageUrl = (course.data() as Map)['imageUrl'] ?? '';
-
-    await showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: _lightGray,
-          title: Text('Modifier le cours', style: TextStyle(color: _darkBrown)),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Titre')),
-                TextField(controller: descriptionController, decoration: const InputDecoration(labelText: 'Description')),
-                TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'Catégorie')),
-                TextField(controller: levelController, decoration: const InputDecoration(labelText: 'Niveau')),
-                const SizedBox(height: 10),
-                if (imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(imageUrl, height: 100),
-                  ),
-                TextButton.icon(
-                  onPressed: () async {
-                    final result = await FilePicker.platform.pickFiles(withData: true, type: FileType.image);
-                    if (result != null && result.files.single.bytes != null) {
-                      final file = result.files.single;
-                      final url = await SupabaseService()
-                          .uploadFile(file, 'images/${file.name}', 'images');
-                      setState(() => imageUrl = url);
-                    }
-                  },
-                  icon: const Icon(Icons.image),
-                  label: const Text("Changer l'image"),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-            ElevatedButton(
-              onPressed: () async {
-                await _firestore.collection('courses').doc(course.id).update({
-                  'title'       : titleController.text,
-                  'description' : descriptionController.text,
-                  'category'    : categoryController.text,
-                  'level'       : levelController.text,
-                  'imageUrl'    : imageUrl,
-                });
-                Navigator.pop(context);
-                fetchCourses();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: _darkBrown),
-              child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showChapters(DocumentSnapshot course) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        color: _beigeWhite,
-        padding: const EdgeInsets.all(16),
-        height: MediaQuery.of(context).size.height * 0.8,
-        child: Column(
-          children: [
-            Text(
-              'Chapitres : ${(course.data() as Map)['title']}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: _darkBrown,
-              ),
-            ),
-            const Divider(color: Colors.grey),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('courses')
-                    .doc(course.id)
-                    .collection('chapters')
-                    .orderBy('index')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final chapters = snapshot.data!.docs;
-                  if (chapters.isEmpty) {
-                    return Center(
-                      child: Text(
-                        "Aucun chapitre pour ce cours",
-                        style: TextStyle(color: _darkBrown.withOpacity(0.7)),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: chapters.length,
-                    itemBuilder: (context, index) {
-                      final chapter = chapters[index];
-                      final chData  = chapter.data() as Map<String, dynamic>;
-                      return Card(
-                        color: _white,
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ExpansionTile(
-                          leading: chData['videoUrl'] != null
-                              ? Icon(Icons.play_circle_filled, color: _primaryBrown)
-                              : Icon(Icons.videocam_off, color: _darkBrown.withOpacity(0.7)),
-                          title: Text(
-                            chData['title'],
-                            style: TextStyle(fontWeight: FontWeight.bold, color: _darkBrown),
-                          ),
-                          subtitle: Text(
-                            chData['summary'] ?? '',
-                            style: TextStyle(color: _darkBrown.withOpacity(0.8)),
-                          ),
-                          children: [
-                            // Boutons Modifier / Supprimer le chapitre
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit, color: _darkBrown),
-                                  tooltip: "Modifier le chapitre",
-                                  onPressed: () => _editChapter(course.id, chapter),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete, color: _redImportant),
-                                  tooltip: "Supprimer le chapitre",
-                                  onPressed: () => _deleteChapter(course.id, chapter.id),
-                                ),
-                              ],
-                            ),
-                            // QCM de ce chapitre
-                            StreamBuilder<QuerySnapshot>(
-                              stream: _firestore
-                                  .collection('courses')
-                                  .doc(course.id)
-                                  .collection('chapters')
-                                  .doc(chapter.id)
-                                  .collection('questions')
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
-                                  return const Center(child: CircularProgressIndicator());
-                                }
-                                final questions = snapshot.data!.docs;
-                                if (questions.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      "Aucun QCM disponible",
-                                      style: TextStyle(color: _darkBrown.withOpacity(0.7)),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  children: questions.map((q) {
-                                    final qData = q.data() as Map<String, dynamic>;
-                                    return ListTile(
-                                      tileColor: _beigeWhite.withOpacity(0.6),
-                                      title: Text(
-                                        qData['questionText'] ?? '',
-                                        style: TextStyle(color: _darkBrown),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: List.generate(qData['options'].length, (i) {
-                                          final isCorrect = i == qData['correctIndex'];
-                                          return Text(
-                                            "${String.fromCharCode(65 + i)}. ${qData['options'][i]}",
-                                            style: TextStyle(
-                                              fontWeight: isCorrect ? FontWeight.bold : FontWeight.normal,
-                                              color: isCorrect ? Colors.green : _darkBrown.withOpacity(0.8),
-                                            ),
-                                          );
-                                        }),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: Icon(Icons.delete, color: _redImportant),
-                                        onPressed: () async {
-                                          await _firestore
-                                              .collection('courses')
-                                              .doc(course.id)
-                                              .collection('chapters')
-                                              .doc(chapter.id)
-                                              .collection('questions')
-                                              .doc(q.id)
-                                              .delete();
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text("QCM supprimé")),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => QcmFormPage(
-                                      courseId: course.id,
-                                      chapterId: chapter.id,
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: Icon(Icons.quiz, color: _darkBrown),
-                              label: Text(
-                                "Ajouter / Modifier QCM",
-                                style: TextStyle(color: _darkBrown),
-                              ),
-                            ),
-                            // Commentaires de ce chapitre
-                            StreamBuilder<QuerySnapshot>(
-                              stream: _firestore
-                                  .collection('courses')
-                                  .doc(course.id)
-                                  .collection('chapters')
-                                  .doc(chapter.id)
-                                  .collection('comments')
-                                  .orderBy('timestamp', descending: true)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
-                                  return const Center(child: CircularProgressIndicator());
-                                }
-                                final comments = snapshot.data!.docs;
-                                if (comments.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      "Aucun commentaire pour ce chapitre.",
-                                      style: TextStyle(color: _darkBrown.withOpacity(0.7)),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  children: comments.map((commentDoc) {
-                                    final data = commentDoc.data() as Map<String, dynamic>;
-                                    return Card(
-                                      color: _white.withOpacity(0.9),
-                                      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "${data['userName'] ?? 'Utilisateur'} : ${data['comment']}",
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: _darkBrown,
-                                              ),
-                                            ),
-                                            if (data['reply'] != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 6),
-                                                child: Text(
-                                                  "→ Votre réponse : ${data['reply']}",
-                                                  style: TextStyle(color: Colors.green[800]),
-                                                ),
-                                              ),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.end,
-                                              children: [
-                                                if (data['reply'] == null)
-                                                  TextButton.icon(
-                                                    onPressed: () => _replyToComment(
-                                                      course.id,
-                                                      chapter.id,
-                                                      commentDoc.id,
-                                                      data['userId'],
-                                                    ),
-                                                    label: Text(
-                                                      "Répondre",
-                                                      style: TextStyle(color: _darkBrown),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _editChapter(String courseId, DocumentSnapshot chapter) async {
-    final titleController   = TextEditingController(text: (chapter.data() as Map)['title']);
-    final summaryController = TextEditingController(text: (chapter.data() as Map)['summary']);
-    String videoUrl         = (chapter.data() as Map)['videoUrl'] ?? '';
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Modifier le chapitre'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Titre')),
-                TextField(controller: summaryController, decoration: const InputDecoration(labelText: 'Résumé')),
-                if (videoUrl.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10.0),
-                    child: Row(
-                      children: [
-                        Icon(Icons.video_library, color: _darkBrown),
-                        const SizedBox(width: 8),
-                        const Expanded(child: Text("Vidéo actuelle ajoutée", style: TextStyle(fontSize: 13))),
-                      ],
-                    ),
-                  ),
-                TextButton.icon(
-                  onPressed: () async {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['mp4', 'mov', 'webm'],
-                      withData: true,
-                    );
-                    if (result != null && result.files.single.bytes != null) {
-                      final file = result.files.single;
-                      final url = await SupabaseService()
-                          .uploadFile(file, 'videos/${file.name}', 'videos');
-                      setState(() {
-                        videoUrl = url;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("✅ Vidéo téléversée avec succès."),
-                          backgroundColor: _darkBrown,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text("Changer la vidéo"),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-            ElevatedButton(
-              onPressed: () async {
-                await _firestore
-                    .collection('courses')
-                    .doc(courseId)
-                    .collection('chapters')
-                    .doc(chapter.id)
-                    .update({
-                  'title'    : titleController.text,
-                  'summary'  : summaryController.text,
-                  'videoUrl' : videoUrl,
-                });
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: _darkBrown),
-              child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1007,8 +622,9 @@ class _HomeFormateurState extends State<HomeFormateur> {
     }
   }
 
-  // ========== Répondre / modifier réponse à un commentaire ==========
-  void _replyToComment(String courseId, String chapterId, String commentId, String userId) {
+  // ========== Répondre à un commentaire (reste en dialog) ==========
+  void _replyToComment(
+      String courseId, String chapterId, String commentId, String userId) {
     final replyController = TextEditingController();
     showDialog(
       context: context,
@@ -1035,10 +651,10 @@ class _HomeFormateurState extends State<HomeFormateur> {
                     .collection('comments')
                     .doc(commentId)
                     .update({
-                  'reply'         : replyText,
+                  'reply': replyText,
                   'replyTimestamp': Timestamp.fromDate(DateTime.now()),
-                  'repliedBy'     : _auth.currentUser!.uid,
-                  'isReplyRead'   : false,
+                  'repliedBy': _auth.currentUser!.uid,
+                  'isReplyRead': false,
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
