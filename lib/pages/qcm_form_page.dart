@@ -15,7 +15,7 @@ class _QcmFormPageState extends State<QcmFormPage> {
   final List<QuestionForm> _questions = [];
   int _questionCount = 5;
 
-  final Color primaryColor = const Color(0xFF30B0C7);
+  final Color primaryColor = const Color(0xD0805D3B);
   final Color accentYellow = const Color(0xFFFFD700);
   final Color importantRed = const Color(0xFFE53935);
   final Color lightGray = const Color(0xFFEEEEEE);

@@ -7,14 +7,7 @@ class ResetPasswordSentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white, // Fond blanc
-      appBar: AppBar(
-        backgroundColor: Colors.white, // Fond blanc pour l'appBar
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -47,7 +40,7 @@ class ResetPasswordSentScreen extends StatelessWidget {
                 onPressed: () => Navigator.popUntil(
                     context, (route) => route.isFirst),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF30B0C7), // Bouton navy
+                  backgroundColor: Color(0xD0805D3B), // Bouton navy
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

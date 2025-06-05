@@ -28,11 +28,6 @@ class _CommentsPageState extends State<CommentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _beigeWhite,
-      appBar: AppBar(
-        title: const Text('Commentaires reçus'),
-        backgroundColor: _darkBrown,
-        iconTheme: IconThemeData(color: _white),
-      ),
       body: StreamBuilder<QuerySnapshot>(
         // 1) Récupérer tous les cours dont authorId == utilisateur actuel
         stream: _firestore

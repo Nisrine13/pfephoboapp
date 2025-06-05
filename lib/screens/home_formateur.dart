@@ -834,39 +834,11 @@ class _HomeFormateurState extends State<HomeFormateur> {
                                                       commentDoc.id,
                                                       data['userId'],
                                                     ),
-                                                    icon: Icon(Icons.reply, color: _darkBrown),
                                                     label: Text(
                                                       "Répondre",
                                                       style: TextStyle(color: _darkBrown),
                                                     ),
                                                   ),
-                                                if (data['reply'] != null)
-                                                  IconButton(
-                                                    icon: Icon(Icons.edit, color: _darkBrown),
-                                                    onPressed: () => _replyToComment(
-                                                      course.id,
-                                                      chapter.id,
-                                                      commentDoc.id,
-                                                      data['userId'],
-                                                    ),
-                                                    tooltip: "Modifier la réponse",
-                                                  ),
-                                                IconButton(
-                                                  icon: Icon(Icons.delete, color: _redImportant),
-                                                  onPressed: () async {
-                                                    await _firestore
-                                                        .collection('courses')
-                                                        .doc(course.id)
-                                                        .collection('chapters')
-                                                        .doc(chapter.id)
-                                                        .collection('comments')
-                                                        .doc(commentDoc.id)
-                                                        .delete();
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(content: Text("Commentaire supprimé")),
-                                                    );
-                                                  },
-                                                ),
                                               ],
                                             ),
                                           ],
